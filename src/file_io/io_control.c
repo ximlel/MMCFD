@@ -153,6 +153,16 @@ void example_io(const char *example, char *add_mkdir, const int i_or_o)
 	do {														\
 		strcpy(add, add_mkdir);									\
 		strcat(add, #sfv ".txt");								\
+		if ((fp = fopen(add, "r")) == NULL)						\
+			{													\
+				strcpy(add, add_mkdir);							\
+				strcat(add, #sfv ".dat");						\
+			}													\
+		if ((fp = fopen(add, "r")) == NULL)						\
+			{													\
+				fprintf(stderr, "No input file: %s!\n", #sfv); 	\
+				exit(5);										\
+			}													\
 		FV.sfv = malloc((int)config[3] * sizeof(double));		\
 		if(FV.sfv == NULL)										\
 			{													\
@@ -173,6 +183,8 @@ struct flu_var flu_conf_load(const char *example)
 	char add_mkdir[FILENAME_MAX];
 	example_io(example, add_mkdir, 1);
 
+	FILE * fp;
+	int i;
 	// We read the initial data file. 
 	char add[FILENAME_MAX];
 	strcpy(add, add_mkdir);
@@ -183,7 +195,18 @@ struct flu_var flu_conf_load(const char *example)
 
 	strcpy(add, add_mkdir);								
 	strcat(add, "P.txt");	
+	if ((fp = fopen(add, "r")) == NULL)						
+		{													
+			strcpy(add, add_mkdir);							
+			strcat(add, "P.dat");						
+		}													
+	if ((fp = fopen(add, "r")) == NULL)						
+		{													
+			fprintf(stderr, "No input file: P!\n"); 	
+			exit(5);										
+		}
 	flu_var_init(add, config, 0); // pre read.
+
 		
 	STR_FLU_INI(P);
 	STR_FLU_INI(RHO);
@@ -223,7 +246,7 @@ struct flu_var flu_conf_load(const char *example)
 
 	STR_FLU_INI(gamma);
 	if (r == 0)
-		for(int i = 0; i < (int)config[3]; i++)
+		for(i = 0; i < (int)config[3]; i++)
 			FV.gamma[i] = 1.0+1.0/(FV.Z_a[i]/(config[6]-1.0)+(1.0-FV.Z_a[i])/(config[106]-1.0));
 	
 	printf("%s is initialized, grid number = %d .\n", example, (int)config[3]);
