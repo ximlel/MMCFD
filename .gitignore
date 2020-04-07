@@ -1,37 +1,49 @@
-# Prerequisites
-*.d
+# ======================C++ project==================
 
-# Object files
+# Compiled Object files
+*.slo
+*.lo
 *.o
+*.obj
 *.ko
 *.obj
 *.elf
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Fortran module files
+*.mod
+*.smod
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+
+# ======================C project==================
 
 # Linker output
 *.ilk
 *.map
 *.exp
 
-# Precompiled Headers
-*.gch
-*.pch
-
-# Libraries
-*.lib
-*.a
-*.la
-*.lo
-
 # Shared objects (inc. Windows DLLs)
-*.dll
-*.so
 *.so.*
-*.dylib
 
 # Executables
-*.exe
-*.out
-*.app
 *.i*86
 *.x86_64
 *.hex
@@ -50,3 +62,28 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+
+# ======================MATLAB project==================
+
+# mexFunction
+*.mexa64
+
+# MAT-file
+*.mat
+
+# ==========================else========================
+
+# Exact solution
+# *.exact
+
+# matrix data (data_in)
+*.dat
+
+# Tecplot data (data_out)
+*.plt
+*.tec
+
+# Text Backup
+*.*~
+*.#*
+*#

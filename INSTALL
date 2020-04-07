@@ -1,0 +1,12 @@
+we need:
+python3 python3-numpy
+gmesh(前处理，后处理)
+//or ICEM_CFD \ TECPLOT,paraview(可用参数选择)
+gcc
+
+we use:
+doxygen(文档生成)
+git(版本控制)
+
+sudo apt-get install python3 python3-numpy python3-scipy gmsh
+sudo apt-get install git doxygen doxygen-gui graphviz

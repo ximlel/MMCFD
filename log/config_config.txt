@@ -1,0 +1,54 @@
+0	DIM(不可修改)
+1	the total time		//t_all
+2	species(muti-fluid)	2
+3	总网格数	//num_cell
+4	the largest value can be seen as zero
+5	the maximum number of time steps
+6	the polytropic index	//gamma(_a)
+7	CFL
+8	EUL/LAG	(默认EUL:0)
+9	order (默认1:1)
+
+10	the spatial grid size in x direction	//s_x
+11	the spatial grid size in y direction	//s_y
+12	the spatial grid size in z direction	//s_z
+13	the grid number in x direction     //n_x
+14	the grid number in y direction     //n_y
+15	the grid number in z direction     //n_z
+
+16	tau			存储时间步长tau
+
+30	3D模拟(默认关闭)        V,W,Y,Z都初始化为0
+31	重构			(默认:0原始变量重构) 否则(1):守恒变量重构		
+32	输出初始网格数据	(默认:1开启)  (0关闭)
+33	xy_splitting		1:x  2:y
+
+
+40	limiter			(默认1:Ven) 0:Barth
+41	1D-limiter-alpha	(默认为1.9) (0,2)
+
+60	U_gamma			(默认inf) 不为inf即取U_gamma(一般取1):守恒量增加(+U_gamma)
+61	v_fix			(默认0)关闭　(1开启)
+70	上下周期边界设定偏移(+上->  -上<-)
+
+106 	the polytropic index(b)	//gamma(_b)
+110 	c_{v,a}
+111 	c_{v,b}
+
+#./FLUID_SRC.out 输入 输出 维数 solver 网格
+solver形式(1_Godunov, 2_ROE)
+
+步数
+>0
+=0
+
+其他修改:?=????
+means:config[?]=????
+
+exit
+	1 文件目录错误
+	2 读入数据错误
+	5 内存错误
+	3 计算错误
+
+periodic boundary condition(-7)
