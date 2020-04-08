@@ -20,7 +20,7 @@ extern double config[];
 
 //fluid
 struct flu_var {
-	double *RHO, *U, *V, *W, *P, *PHI, *Z_a, *gamma;
+	double *RHO, *U, *V, *W, *P, *PHI, *Z_a, *gamma, *RHO_b, *U_b, *V_b, *P_b;
 };
 
 //cell
@@ -67,12 +67,12 @@ struct i_f_var {
 
 //Riemann invariants
 struct RI_var {
-	double lo_s, u_s, Q, P, H, eta_g;
+	double rho_s, u_s, Q, P, H, eta_g;
 };
 //Riemann invariants
 struct U_var {
-	double phi_s, lo_s, u_s, v_s, p_s, phi_g, lo_g, u_g, v_g, p_g;
-	double U_lo_s, U_u_s, U_v_s, U_e_s, U_lo_g, U_u_g, U_v_g, U_e_g;
+	double z_s, rho_s, u_s, v_s, p_s, z_g, rho_g, u_g, v_g, p_g;
+	double U_rho_s, U_u_s, U_v_s, U_e_s, U_rho_g, U_u_g, U_v_g, U_e_g;
 };
 
 //mesh

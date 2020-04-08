@@ -52,8 +52,8 @@ void U_init(int n_x, double ZRHO_gC[][n_x], double RHO_U_gC[][n_x], double RHO_V
             double ZRHO_lC[][n_x], double RHO_U_lC[][n_x], double RHO_V_lC[][n_x], double E_lC[][n_x], int i, int j, 
             double * U_RHO_g, double * U_U_g, double * U_V_g, double * U_E_g, 
             double * U_RHO_l, double * U_U_l, double * U_V_l, double * U_E_l, int a, int b, int c, int d);
-void NewtonRapshon(double * x_star, double * err, double fun, double dfun, double x0, double eps);
-void NewtonRapshon_matrix(double * x_star, double * err, double * fun, double * dfun, double * x0, double eps);
-void RI2U_cal(struct U_var * U, const struct RI_var * RI, double phi_s, const double lo_g_start);
+void NewtonRapshon(double * x_star, double * err, double fun, double dfun, double eps);
+void NewtonRapshon_matrix(double * x_star, double * err, double * fun, double * dfun, double eps);
+void RI2U_cal(struct U_var * U, const struct RI_var * RI, double z_s, const double rho_g_start);
 void U2RI_cal(const struct U_var * U, struct RI_var * RI);
-void primitive_comp(double * U, struct U_var * U_L, struct U_var * U_R, double phi_sL, double phi_sR, double phi_sL_out, double phi_sR_out, double area_L, double area_R);
+void primitive_comp(double * U, struct U_var * U_L, struct U_var * U_R, double z_sL, double z_sR, double z_sL_out, double z_sR_out, double area_L, double area_R);

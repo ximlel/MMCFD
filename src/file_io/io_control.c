@@ -148,7 +148,6 @@ void example_io(const char *example, char *add_mkdir, const int i_or_o)
 }
 
 
-
 #define STR_FLU_INI(sfv)										\
 	do {														\
 		strcpy(add, add_mkdir);									\
@@ -159,10 +158,7 @@ void example_io(const char *example, char *add_mkdir, const int i_or_o)
 				strcat(add, #sfv ".dat");						\
 			}													\
 		if ((fp = fopen(add, "r")) == NULL)						\
-			{													\
-				fprintf(stderr, "No input file: %s!\n", #sfv); 	\
-				exit(5);										\
-			}													\
+			fprintf(stderr, "No input file: %s!\n", #sfv);		\
 		FV.sfv = malloc((int)config[3] * sizeof(double));		\
 		if(FV.sfv == NULL)										\
 			{													\
@@ -206,7 +202,6 @@ struct flu_var flu_conf_load(const char *example)
 			exit(5);										
 		}
 	flu_var_init(add, config, 0); // pre read.
-
 		
 	STR_FLU_INI(P);
 	STR_FLU_INI(RHO);
@@ -243,12 +238,16 @@ struct flu_var flu_conf_load(const char *example)
 			printf("Initial date of fluid field failed to read!\n");
 			exit(1);
 		}
-
+	STR_FLU_INI(RHO_b);
+	STR_FLU_INI(U_b);
+	STR_FLU_INI(V_b);
+	STR_FLU_INI(P_b);
+/*
 	STR_FLU_INI(gamma);
 	if (r == 0)
 		for(i = 0; i < (int)config[3]; i++)
 			FV.gamma[i] = 1.0+1.0/(FV.Z_a[i]/(config[6]-1.0)+(1.0-FV.Z_a[i])/(config[106]-1.0));
-	
+*/	
 	printf("%s is initialized, grid number = %d .\n", example, (int)config[3]);
 
 	config_check();
