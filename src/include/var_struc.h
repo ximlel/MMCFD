@@ -75,6 +75,50 @@ struct U_var {
 	double U_rho_s, U_u_s, U_v_s, U_e_s, U_rho_g, U_u_g, U_v_g, U_e_g;
 };
 
+//BN
+struct slope_var {
+	double **Z_sx, **Z_sy;
+	double **RHO_gx, **P_gx, **U_gx, **V_gx;
+	double **RHO_gy, **P_gy, **U_gy, **V_gy;
+	double **RHO_sx, **P_sx, **U_sx, **V_sx;
+	double **RHO_sy, **P_sy, **U_sy, **V_sy;
+};
+
+struct face_var {
+	double **Z_I_sxL, Z_I_sxR, Z_I_syL, Z_I_syR;
+	double **RHO_I_gxL, **P_I_gxL, **U_I_gxL, **V_I_gxL;
+	double **RHO_I_gxR, **P_I_gxR, **U_I_gxR, **V_I_gxR;
+	double **RHO_I_gyL, **P_I_gyL, **U_I_gyL, **V_I_gyL;
+	double **RHO_I_gyR, **P_I_gyR, **U_I_gyR, **V_I_gyR;
+	double **RHO_I_sxL, **P_I_sxL, **U_I_sxL, **V_I_sxL;
+	double **RHO_I_sxR, **P_I_sxR, **U_I_sxR, **V_I_sxR;
+	double **RHO_I_syL, **P_I_syL, **U_I_syL, **V_I_syL;
+	double **RHO_I_syR, **P_I_syR, **U_I_syR, **V_I_syR;
+};
+
+struct center_var {
+	double **Z_sC;
+	double **RHO_gC, **P_gC, **U_gC, **V_gC;
+	double **RHO_sC, **P_sC, **U_sC, **V_sC;
+	double **ZRHO_gC, **ZRHO_sC;
+	double **RHO_U_gC, **RHO_V_gC, **E_gC;
+	double **RHO_U_sC, **RHO_V_sC, **E_sC;
+};
+
+struct flux_var {
+	double **RHO_F_gx, **E_F_gx, **U_F_gx, **V_F_gx;
+	double **RHO_F_gy, **E_F_gy, **U_F_gy, **V_F_gy;
+	double **RHO_F_sx, **E_F_sx, **U_F_sx, **V_F_sx;
+	double **RHO_F_sy, **E_F_sy, **U_F_sy, **V_F_sy;
+	double **stag_RHO_F_sx, **stag_ZRHO_F_sx;
+	double **stag_RHO_F_sy, **stag_ZRHO_F_sy;
+  	double **Z_s_MIDx, **Z_s_MIDy;
+  	double **P_g_MIDx, **U_g_MIDx, **V_g_MIDx;
+  	double **P_s_MIDx, **U_s_MIDx, **V_s_MIDx;
+	double **P_g_MIDy, **U_g_MIDy, **V_g_MIDy;
+	double **P_s_MIDy, **U_s_MIDy, **V_s_MIDy;
+};
+
 //mesh
 struct mesh_var {
 	int num_pt, num_ghost, *cell_type, **cell_pt;

@@ -45,7 +45,7 @@ read
 #./hydrocode.out RP2D_shear_Quad	RP2D_shear_Quad/RP2D_shear_Quad	2 2_GRP			RMI_S
 #./hydrocode.out RP2D_shear_Quad	RP2D_shear_Quad/RP2D_shear_Quad_G2D	2 2_GRP_2D		RMI_S
 
-./hydrocode.out RP2D_BN	RP2D_BN/RP2D_BN_1_g	2 2_GRP			free
+#./hydrocode.out RP2D_BN	RP2D_BN/RP2D_BN_1_g	2 2_GRP			free
 
 #./hydrocode.out RMI/RMI_81	RMI/RMI_81	2 1_Riemann_exact RMI
 #./hydrocode.out RMI/RMI_81	RMI/RMI_81	2 2_GRP		  RMI

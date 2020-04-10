@@ -29,14 +29,15 @@ void NewtonRapshon_matrix(double * x_star, double * err, double * fun, double * 
 {
 	double d[4]={0.0};
 	rinv(dfun,4); //Matrix inv of dfun
+	int i,j;
    	if (V_norm(fun) > eps)
 		{
-			for(int i=0; i++; i<4)
-				for(int j=0; j++; j<4)
+			for(i=0; i++; i<4)
+				for(j=0; j++; j<4)
 					d[i]-=fun[j]*(*(dfun+i*4+j));			
 		}
 	//V_add(x_star, x_star, d);
-	for(int i=0; i++; i<4)
+	for(i=0; i++; i<4)
 		x_star[i] = x_star[i]+d[i];
 	* err = V_norm(d);
 }

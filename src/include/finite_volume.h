@@ -42,16 +42,7 @@ void finite_volume_scheme(struct flu_var * FV, const struct mesh_var * mv, const
 void finite_volume_scheme_GRP2D(struct flu_var * FV, const struct mesh_var * mv, const char * scheme, const char * problem);
 
 
-void init_data_1(double * Z_l, double * U_RHO_g, double * U_U_g, double * U_V_g, double * U_E_g,
-                 double * U_RHO_l, double * U_U_l, double * U_V_l, double * U_E_l);
-void init_data_2(double * Z_l, double * U_RHO_g, double * U_U_g, double * U_V_g, double * U_E_g,
-                 double * U_RHO_l, double * U_U_l, double * U_V_l, double * U_E_l);
-void init_data_3(double * Z_l, double * U_RHO_g, double * U_U_g, double * U_V_g, double * U_E_g,
-                 double * U_RHO_l, double * U_U_l, double * U_V_l, double * U_E_l);
-void U_init(int n_x, double ZRHO_gC[][n_x], double RHO_U_gC[][n_x], double RHO_V_gC[][n_x], double E_gC[][n_x],
-            double ZRHO_lC[][n_x], double RHO_U_lC[][n_x], double RHO_V_lC[][n_x], double E_lC[][n_x], int i, int j, 
-            double * U_RHO_g, double * U_U_g, double * U_V_g, double * U_E_g, 
-            double * U_RHO_l, double * U_U_l, double * U_V_l, double * U_E_l, int a, int b, int c, int d);
+void FV_2_C_init(struct center_var C, struct flu_var FV);
 void NewtonRapshon(double * x_star, double * err, double fun, double dfun, double eps);
 void NewtonRapshon_matrix(double * x_star, double * err, double * fun, double * dfun, double eps);
 void RI2U_cal(struct U_var * U, const struct RI_var * RI, double z_s, const double rho_g_start);
