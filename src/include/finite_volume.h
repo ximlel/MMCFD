@@ -48,3 +48,11 @@ void NewtonRapshon_matrix(double * x_star, double * err, double * fun, double * 
 void RI2U_cal(struct U_var * U, const struct RI_var * RI, double z_s, const double rho_g_start);
 void U2RI_cal(const struct U_var * U, struct RI_var * RI);
 void primitive_comp(double * U, struct U_var * U_L, struct U_var * U_R, double z_sL, double z_sR, double z_sL_out, double z_sR_out, double area_L, double area_R);
+
+void BN_C2U(struct center_var C, double *U, int i, int j, int U_or_V);
+void BN_ULR2prim(struct U_var U_L[][(int)config[13]], struct U_var U_R[][(int)config[13]], struct center_var C, int i, int j);
+void BN_ULR2cons(struct U_var U_L[][(int)config[13]], struct U_var U_R[][(int)config[13]], struct center_var C, int i, int j);
+void BN_RI2Cx(struct RI_var RI, struct center_var C, int i, int j);
+void BN_RI2Cy(struct RI_var RI, struct center_var C, int i, int j);
+void GRP_var_init(struct GRP_LR_var *G, struct slope_var SV, struct U_var U[][(int)config[13]], double d, int i, int j, int p_or_m);
+

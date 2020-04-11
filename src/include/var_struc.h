@@ -67,12 +67,21 @@ struct i_f_var {
 
 //Riemann invariants
 struct RI_var {
-	double rho_s, u_s, Q, P, H, eta_g;
+	double z_s, rho_s, u_s, Q, P, H, eta_g;
 };
-//Riemann invariants
+//U invariants
 struct U_var {
 	double z_s, rho_s, u_s, v_s, p_s, z_g, rho_g, u_g, v_g, p_g;
 	double U_rho_s, U_u_s, U_v_s, U_e_s, U_rho_g, U_u_g, U_v_g, U_e_g;
+};
+
+struct GRP_LR_var {
+	double rho_g,  p_g,  u_g,  v_g;
+	double rho_gx, p_gx, u_gx, v_gx;
+	double rho_gy, p_gy, u_gy, v_gy;
+	double rho_s,  p_s,  u_s,  v_s;
+	double rho_sx, p_sx, u_sx, v_sx;
+	double rho_sy, p_sy, u_sy, v_sy;
 };
 
 //BN
@@ -103,6 +112,10 @@ struct center_var {
 	double **ZRHO_gC, **ZRHO_sC;
 	double **RHO_U_gC, **RHO_V_gC, **E_gC;
 	double **RHO_U_sC, **RHO_V_sC, **E_sC;
+	double **Q_xd, **P_xd, **H_xd, **eta_g_xd;
+	double **Q_yd, **P_yd, **H_yd, **eta_g_yd;
+	double **Z_sL_xd, **Z_sR_xd;
+	double **Z_sL_yd, **Z_sR_yd;
 };
 
 struct flux_var {

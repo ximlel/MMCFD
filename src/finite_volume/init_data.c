@@ -38,8 +38,8 @@ void FV_2_C_init(struct center_var C, struct flu_var FV)
 	for(i = 0; i < n_y; ++i)
 		for(j = 0; j < n_x; ++j) //ignore "n_x-1, n_y-1" also is OK.
 			{
-			    i_1=fmax(i-1,0);
-			    j_1=fmax(j-1,0);
+			    i_1=i-1>0?i-1:0;
+			    j_1=j-1>0?j-1:0;
                 C.ZRHO_gC[i][j]  = 0.25*(U_RHO_g[i_1][j_1]+U_RHO_g[i_1][j]+U_RHO_g[i][j_1]+U_RHO_g[i][j]);
                 C.RHO_U_gC[i][j] = 0.25*(U_U_g[i_1][j_1]  +U_U_g[i_1][j]  +U_U_g[i][j_1]  +U_U_g[i][j]);
                 C.RHO_V_gC[i][j] = 0.25*(U_V_g[i_1][j_1]  +U_V_g[i_1][j]  +U_V_g[i][j_1]  +U_V_g[i][j]);
