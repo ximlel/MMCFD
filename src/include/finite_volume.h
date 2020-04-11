@@ -54,5 +54,6 @@ void BN_ULR2prim(struct U_var U_L[][(int)config[13]], struct U_var U_R[][(int)co
 void BN_ULR2cons(struct U_var U_L[][(int)config[13]], struct U_var U_R[][(int)config[13]], struct center_var C, int i, int j);
 void BN_RI2Cx(struct RI_var RI, struct center_var C, int i, int j);
 void BN_RI2Cy(struct RI_var RI, struct center_var C, int i, int j);
-void GRP_var_init(struct GRP_LR_var *G, struct slope_var SV, struct U_var U[][(int)config[13]], double d, int i, int j, int p_or_m);
-
+void GRP_var_init(struct GRP_LR_var *G, struct slope_var SV, struct U_var U[][(int)config[13]], double d, int i, int j, int pm_xy);
+void GRP_RI_var_init(struct GRP_RI_LR_var *GRI, struct slope_var SV, struct center_var C, double d, int i, int j, int pm_xy);
+void RI_LR2G_LR(const struct GRP_RI_LR_var *GRI, struct GRP_LR_var *G, double z_s, int x_or_y);

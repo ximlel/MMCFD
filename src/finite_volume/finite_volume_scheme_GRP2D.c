@@ -48,6 +48,12 @@ static double minmod2(const double a, const double b)
 		SV.fvar##y[i][j] = minmod2((CV.fvar##C[i][j]-CV.fvar##C[iL][j])/config[11],(CV.fvar##C[iR][j]-CV.fvar##C[i][j])/config[11]); \
 	} while(0)
 
+#define side_lim_RI(fvar)													\
+	do {																\
+		SV.fvar##x[i][j] = minmod2((CV.fvar##xd[i][j]-CV.fvar##xd[i][jL])/config[10],(CV.fvar##xd[i][jR]-CV.fvar##xd[i][j])/config[10]); \
+		SV.fvar##y[i][j] = minmod2((CV.fvar##yd[i][j]-CV.fvar##yd[iL][j])/config[11],(CV.fvar##yd[iR][j]-CV.fvar##yd[i][j])/config[11]); \
+	} while(0)
+
 static void slope_simiter3_GRP(int n_x, struct face_var FV, struct center_var CV, struct slope_var SV)
 {
 	int HN = 2;
@@ -91,7 +97,9 @@ static void slope_simiter3_GRP(int n_x, struct face_var FV, struct center_var CV
 				side_lim(Z_s);
 				side_lim(RHO_g);side_lim(U_g);side_lim(V_g);side_lim(P_g);
 				side_lim(RHO_s);side_lim(U_s);side_lim(V_s);side_lim(P_s);
-
+				side_lim_RI(Q_);side_lim_RI(P_);side_lim_RI(H_);side_lim_RI(eta_g_);
+				side_lim_RI(Z_sS_);
+				
 				if (order == 1)
 					for(k=0, p=SV.Z_sx; k<sizeof(struct slope_var)/sizeof(double **); k++)
 						(p++)[i][j] = 0.0;
@@ -122,22 +130,21 @@ void finite_volume_scheme_GRP2D(struct flu_var * FV, const struct mesh_var * mv,
 
 	const int dim = (int)config[0];
 	const int order = (int)config[9];
-	const double eps = config[4];
+	const double eps = config[4], eps_big = 1e-10;
 	const double gamma_g=config[6], gamma_s=config[106];
 	const int n_y = (int)config[14], n_x = (int)config[13];
 	const double dx= config[10], dy= config[11];
 	struct cell_var cv = cell_mem_init(mv, FV);
+
 	vol_comp(&cv, mv);
 	cell_rel(&cv, mv);
-
 	printf("Grid has been constructed.\n");
 
 	double tau; // the length of the time step
 	double t_all = 0.0;
 	const double delta_plot_t = 0.01;
 	double plot_t = 0.0;
-	int i, j, k, stop_step = 0, stop_t = 0;
-	double eps_big = 1e-10, eps_big2 = 1e-3, eps3=1e-10;
+	int i, j, k, l, stop_step = 0, stop_t = 0;
 
 	double **p;
 	struct center_var C;
@@ -169,21 +176,23 @@ void finite_volume_scheme_GRP2D(struct flu_var * FV, const struct mesh_var * mv,
 				p[i]=(double*)calloc(n_x+1,sizeof(double));
 		}
 	FV_2_C_init(C, *FV);
-
+	
+	int iL,iR,jL,jR, i_1, j_1, ip1, jp1;
 	double z_gmid, rho_gmid, p_gmid, u_gmid, v_gmid;
 	double z_smid, rho_smid, p_smid, u_smid, v_smid;
-	double z_sL, z_sR, z_sxL, z_sxR, z_syL, z_syR;
-
-	int iL,iR,jL,jR, i_1, j_1, ip1, jp1;
+	double z_sx_mid, z_sy_mid;
 	double a_g, a_s, S_max, S_max_g, S_max_s;
-	double wave_speed[2], dire[6], mid[6], star[6];
-
-	double U[8];
+	double wave_speed[2], dire[6], mid_s[6], mid_g[6], star[6];
+	struct GRP_LR_var GL, GR;
 	struct U_var U_L[n_y][n_x], U_R[n_y][n_x];
 	struct RI_var RI;
-	struct GRP_LR_var GL, GR;
+	struct GRP_RI_LR_var RI_L, RI_R;
+	double U[8];
 	double S, S_tmp, area_L, area_R, RHO_s_cell, ZRHO_s_cell;
-	int l;
+	double z_sL, z_sR, z_sxL, z_sxR, z_syL, z_syR;
+	double stag_RHO_F_sx[n_y+1][n_x+1], stag_ZRHO_F_sx[n_y+1][n_x+1];
+	double stag_RHO_F_sy[n_y+1][n_x+1], stag_ZRHO_F_sy[n_y+1][n_x+1];
+
 	for(l = 0; l < (int)config[5] && stop_step != 1; ++l)
 		{
 			start_clock = clock();
@@ -210,10 +219,9 @@ void finite_volume_scheme_GRP2D(struct flu_var * FV, const struct mesh_var * mv,
 							{
 								i_1 = i-1>0?i-1:0;
 								j_1 = j-1>0?j-1:0;
-								C.Z_sL_xd[i][j] = 0.5*(C.Z_sC[i_1][j_1]+C.Z_sC[i][j_1]);
-								C.Z_sR_xd[i][j] = 0.5*(C.Z_sC[i_1][j]  +C.Z_sC[i][j]);
+								C.Z_sS_xd[i][j] = 0.5*(C.Z_sC[i_1][j]  +C.Z_sC[i][j]);
 								BN_C2U(C,U,i,j,0);
-								primitive_comp(U, &U_L[i][j], &U_R[i][j], C.Z_sL_xd[i][j], C.Z_sR_xd[i][j], C.Z_sL_xd[i][j], C.Z_sR_xd[i][j], 0.5, 0.5);
+								primitive_comp(U, &U_L[i][j], &U_R[i][j], C.Z_sS_xd[i][j_1], C.Z_sS_xd[i][j], C.Z_sS_xd[i][j_1], C.Z_sS_xd[i][j], 0.5, 0.5);
 								BN_ULR2prim(U_L,U_R,C,i,j);
 								U2RI_cal(&U_L[i][j], &RI);
 								BN_RI2Cx(RI,C,i,j);
@@ -226,10 +234,9 @@ void finite_volume_scheme_GRP2D(struct flu_var * FV, const struct mesh_var * mv,
 							{
 								i_1 = i-1>0?i-1:0;
 								j_1 = j-1>0?j-1:0;
-								C.Z_sL_yd[i][j] = 0.5*(C.Z_sC[i_1][j_1]+C.Z_sC[i_1][j]);
-								C.Z_sR_yd[i][j] = 0.5*(C.Z_sC[i][j_1]+C.Z_sC[i][j]);
+								C.Z_sS_yd[i][j] = 0.5*(C.Z_sC[i][j_1]+C.Z_sC[i][j]);
 								BN_C2U(C,U,i,j,1);
-								primitive_comp(U, &U_L[i][j], &U_R[i][j], C.Z_sL_yd[i][j], C.Z_sR_yd[i][j], C.Z_sL_yd[i][j], C.Z_sR_yd[i][j], 0.5, 0.5);
+								primitive_comp(U, &U_L[i][j], &U_R[i][j], C.Z_sS_yd[i_1][j], C.Z_sS_yd[i][j], C.Z_sS_yd[i_1][j], C.Z_sS_yd[i][j], 0.5, 0.5);
 								BN_ULR2prim(U_L,U_R,C,i,j);
 								U2RI_cal(&U_L[i][j], &RI);
 								BN_RI2Cy(RI,C,i,j);
@@ -273,44 +280,49 @@ void finite_volume_scheme_GRP2D(struct flu_var * FV, const struct mesh_var * mv,
 								jR = j<n_x?j:n_x-1;
 								z_smid = U_R[i][jL].z_s;
 								z_gmid = 1.0-z_smid;
+	z_sx_mid;
+	z_sy_mid;
 								GRP_var_init(&GL, SV, U_R, dx, i, jL, 0);
 								GRP_var_init(&GR, SV, U_L, dx, i, jR, 1);
-								
-								linear_GRP_solver_Edir_Q1D(wave_speed, dire, mid, star, 0.0, 0.0, GL.rho_g, GR.rho_g, GL.rho_gx, GR.rho_gx, GL.rho_gy, GR.rho_gy, GL.u_g, GR.u_g, GL.u_gx, GR.u_gx, GL.u_gy, GR.u_gy, GL.v_g, GR.v_g, GL.v_gx, GR.v_gx, GL.v_gy, GR.v_gy, GL.p_g, GR.p_g, GL.p_gx, GR.p_gx, GL.p_gy, GR.p_gy, 0.0, 0.0, -0.0, -0.0, -0.0, -0.0, 0.0, 0.0, -0.0, -0.0, -0.0, -0.0, gamma_g, gamma_g, eps, eps);								
-								Z_s_MIDx[i][j] = z_smid;
-								rho_gmid = mid[0] + 0.5*tau*dire[0];
-								u_gmid   = mid[1] + 0.5*tau*dire[1];
-								v_gmid   = mid[2] + 0.5*tau*dire[2];
-								p_gmid   = mid[3] + 0.5*tau*dire[3];
+								GRP_RI_var_init(&RI_L, SV, C, dx, i, jL, 0);
+								GRP_RI_var_init(&RI_R, SV, C, dx, i, jR, 1);
+								RI_LR2G_LR(&RI_L,&GL,z_smid,0);
+								RI_LR2G_LR(&RI_R,&GR,z_smid,0);
+								linear_GRP_solver_Edir_Q1D(wave_speed, dire, mid_g, star, 0.0, 0.0, GL.rho_g, GR.rho_g, GL.rho_gx, GR.rho_gx, GL.rho_gy, GR.rho_gy, GL.u_g, GR.u_g, GL.u_gx, GR.u_gx, GL.u_gy, GR.u_gy, GL.v_g, GR.v_g, GL.v_gx, GR.v_gx, GL.v_gy, GR.v_gy, GL.p_g, GR.p_g, GL.p_gx, GR.p_gx, GL.p_gy, GR.p_gy, 0.0, 0.0, -0.0, -0.0, -0.0, -0.0, 0.0, 0.0, -0.0, -0.0, -0.0, -0.0, gamma_g, gamma_g, eps, eps);
+								rho_gmid = mid_g[0] + 0.5*tau*dire[0];
+								u_gmid   = mid_g[1] + 0.5*tau*dire[1];
+								v_gmid   = mid_g[2] + 0.5*tau*dire[2];
+								p_gmid   = mid_g[3] + 0.5*tau*dire[3];
 								FX.RHO_F_gx[i][j] = z_gmid*rho_gmid*u_gmid;
 								FX.U_F_gx[i][j]   = FX.RHO_F_gx[i][j]*u_gmid + z_gmid*p_gmid;
 								FX.V_F_gx[i][j]   = FX.RHO_F_gx[i][j]*v_gmid;
 								FX.E_F_gx[i][j]   = gamma_g/(gamma_g-1.0)*p_gmid/rho_gmid + 0.5*(u_gmid*u_gmid + v_gmid*v_gmid);
 								FX.E_F_gx[i][j]   = FX.RHO_F_gx[i][j]*FX.E_F_gx[i][j];
 
-								linear_GRP_solver_Edir_Q1D(wave_speed, dire, mid, star, 0.0, 0.0, GL.rho_s, GR.rho_s, GL.rho_sx, GR.rho_sx, GL.rho_sy, GR.rho_sy, GL.u_s, GR.u_s, GL.u_sx, GR.u_sx, GL.u_sy, GR.u_sy, GL.v_s, GR.v_s, GL.v_sx, GR.v_sx, GL.v_sy, GR.v_sy, GL.p_s, GR.p_s, GL.p_sx, GR.p_sx, GL.p_sy, GR.p_sy, 0.0, 0.0, -0.0, -0.0, -0.0, -0.0, 0.0, 0.0, -0.0, -0.0, -0.0, -0.0, gamma_s, gamma_s, eps, eps);
-								rho_smid = mid[0] + 0.5*tau*dire[0];
-								u_smid   = mid[1] + 0.5*tau*dire[1];
-								v_smid   = mid[2] + 0.5*tau*dire[2];
-								p_smid   = mid[3] + 0.5*tau*dire[3];
+								linear_GRP_solver_Edir_Q1D(wave_speed, dire, mid_s, star, 0.0, 0.0, GL.rho_s, GR.rho_s, GL.rho_sx, GR.rho_sx, GL.rho_sy, GR.rho_sy, GL.u_s, GR.u_s, GL.u_sx, GR.u_sx, GL.u_sy, GR.u_sy, GL.v_s, GR.v_s, GL.v_sx, GR.v_sx, GL.v_sy, GR.v_sy, GL.p_s, GR.p_s, GL.p_sx, GR.p_sx, GL.p_sy, GR.p_sy, 0.0, 0.0, -0.0, -0.0, -0.0, -0.0, 0.0, 0.0, -0.0, -0.0, -0.0, -0.0, gamma_s, gamma_s, eps, eps);
+								rho_smid = mid_s[0] + 0.5*tau*dire[0];
+								u_smid   = mid_s[1] + 0.5*tau*dire[1];
+								v_smid   = mid_s[2] + 0.5*tau*dire[2];
+								p_smid   = mid_s[3] + 0.5*tau*dire[3];
 								FX.P_s_MIDx[i][j] = p_smid;
 								FX.RHO_F_sx[i][j] = z_smid*rho_smid*u_smid;
 								FX.U_F_sx[i][j]   = FX.RHO_F_sx[i][j]*u_smid + z_smid*p_smid;
 								FX.V_F_sx[i][j]   = FX.RHO_F_sx[i][j]*v_smid;
 								FX.E_F_sx[i][j]   = gamma_s/(gamma_s-1.0)*p_smid/rho_smid + 0.5*(u_smid*u_smid + v_smid*v_smid);
 								FX.E_F_sx[i][j]   = FX.RHO_F_sx[i][j]*FX.E_F_sx[i][j];
+								FX.Z_s_MIDx[i][j] = z_smid;
 							}
 					for(i = 0; i < n_y; ++i)
 						for(j = 0; j <=n_x; ++j)
 							{
 								jL = j-1>0?j-1:0;
 								jR = j<n_x?j:n_x-1;
-								z_sxL = Z_sx[i][jL];
-								z_sxR = Z_sx[i][jR];
-								z_syL = Z_sy[i][jL];
-								z_syR = Z_sy[i][jR];
-								z_sL =Z_sC[i][jL]+dx/2*z_sxL;
-								z_sR =Z_sC[i][jR]-dx/2*z_sxR;
+								z_sxL = SV.Z_sx[i][jL];
+								z_sxR = SV.Z_sx[i][jR];
+								z_syL = SV.Z_sy[i][jL];
+								z_syR = SV.Z_sy[i][jR];
+								z_sL = C.Z_sC[i][jL]+dx/2*z_sxL;
+								z_sR = C.Z_sC[i][jR]-dx/2*z_sxR;
 								ip1 = i<n_y-1?i+1:n_y-1;
 								stag_RHO_F_sx[i][j] = 0.5*(U_R[i][j].rho_s*U_R[i][j].u_s+U_R[ip1][j].rho_s*U_R[ip1][j].u_s);
 								if ((U_R[i][j].u_s + U_R[ip1][j].u_s) > 0.0)
@@ -323,40 +335,39 @@ void finite_volume_scheme_GRP2D(struct flu_var * FV, const struct mesh_var * mv,
 							{
 								ip1 = i<n_y-1?i+1:n_y-1;
 								jp1 = j<n_x-1?j+1:n_x-1;
-								RHO_s_cell  = 0.25*(RHO_sC[i][j]+RHO_sC[ip1][j]+RHO_sC[i][jp1]+RHO_sC[ip1][jp1]);
+								RHO_s_cell  = 0.25*(C.RHO_sC[i][j]+C.RHO_sC[ip1][j]+C.RHO_sC[i][jp1]+C.RHO_sC[ip1][jp1]);
 								//ZRHO_s_cell = 0.25*(ZRHO_sC[i][j]+ZRHO_sC[ip1][j]+ZRHO_sC[i][jp1]+ZRHO_sC[ip1][jp1]);
-								ZRHO_s_cell = RHO_s_cell*Z_sC[i][j];
+								ZRHO_s_cell = RHO_s_cell*C.Z_sC[i][j];
 								RHO_s_cell  -=tau*(stag_RHO_F_sx[i][j+1] -stag_RHO_F_sx[i][j])/dx;
 								ZRHO_s_cell -=tau*(stag_ZRHO_F_sx[i][j+1]-stag_ZRHO_F_sx[i][j])/dx;
-								Z_sC[i][j]   =ZRHO_s_cell/RHO_s_cell;
+								C.Z_sC[i][j]   =ZRHO_s_cell/RHO_s_cell;
 							}
 					for(i = 0; i < n_y; ++i)
 						for(j = 0; j < n_x; ++j)
 							{
 								i_1=i-1>0?i-1:0;
-								j_1=j-1>0?j-1:0;
-								Z_sL[i][j] = 0.5*(Z_sC[i_1][j_1]+Z_sC[i][j_1]);
-								Z_sR[i][j] = 0.5*(Z_sC[i_1][j]+Z_sC[i][j]);
+								C.Z_sS_xd[i][j] = 0.5*(C.Z_sC[i_1][j]+C.Z_sC[i][j]);
 							}
 					for(i = 0; i < n_y; ++i)
 						for(j = 0; j < n_x; ++j)
 							{
+								j_1=j-1>0?j-1:0;
 								if(fabs(U_R[i][j].z_s-U_L[i][j].z_s)<eps)
-									S = P_gC[i][j]*(U_R[i][j].z_s-U_L[i][j].z_s);
+									S = C.P_gC[i][j]*(U_R[i][j].z_s-U_L[i][j].z_s);
 								else
-									S = U_R[i][j].z_s*P_s_MIDx[i][j+1]-U_L[i][j].z_s*P_s_MIDx[i][j];
-								ZRHO_gC[i][j] -= tau*(RHO_F_gx[i][j+1]-RHO_F_gx[i][j])/dx;
-								RHO_U_gC[i][j]-= tau*(U_F_gx[i][j+1]  -U_F_gx[i][j])  /dx-tau/dx*S;
-								RHO_V_gC[i][j]-= tau*(V_F_gx[i][j+1]  -V_F_gx[i][j])  /dx;
-								E_gC[i][j]    -= tau*(E_F_gx[i][j+1]  -E_F_gx[i][j])  /dx-tau/dx*S*U_sC[i][j];
-								ZRHO_sC[i][j] -= tau*(RHO_F_sx[i][j+1]-RHO_F_sx[i][j])/dx;
-								RHO_U_sC[i][j]-= tau*(U_F_sx[i][j+1]  -U_F_sx[i][j])  /dx+tau/dx*S;
-								RHO_V_sC[i][j]-= tau*(V_F_sx[i][j+1]  -V_F_sx[i][j])  /dx;
-								E_sC[i][j]    -= tau*(E_F_sx[i][j+1]  -E_F_sx[i][j])  /dx+tau/dx*S*U_sC[i][j];
-								area_L=0.5+U_sC[i][j]*tau/dx;
+									S = U_R[i][j].z_s*FX.P_s_MIDx[i][j+1]-U_L[i][j].z_s*FX.P_s_MIDx[i][j];
+								C.ZRHO_gC[i][j] -= tau*(FX.RHO_F_gx[i][j+1]-FX.RHO_F_gx[i][j])/dx;
+								C.RHO_U_gC[i][j]-= tau*(FX.U_F_gx[i][j+1]  -FX.U_F_gx[i][j])  /dx-tau/dx*S;
+								C.RHO_V_gC[i][j]-= tau*(FX.V_F_gx[i][j+1]  -FX.V_F_gx[i][j])  /dx;
+								C.E_gC[i][j]    -= tau*(FX.E_F_gx[i][j+1]  -FX.E_F_gx[i][j])  /dx-tau/dx*S*C.U_sC[i][j];
+								C.ZRHO_sC[i][j] -= tau*(FX.RHO_F_sx[i][j+1]-FX.RHO_F_sx[i][j])/dx;
+								C.RHO_U_sC[i][j]-= tau*(FX.U_F_sx[i][j+1]  -FX.U_F_sx[i][j])  /dx+tau/dx*S;
+								C.RHO_V_sC[i][j]-= tau*(FX.V_F_sx[i][j+1]  -FX.V_F_sx[i][j])  /dx;
+								C.E_sC[i][j]    -= tau*(FX.E_F_sx[i][j+1]  -FX.E_F_sx[i][j])  /dx+tau/dx*S*C.U_sC[i][j];
+								area_L=0.5+C.U_sC[i][j]*tau/dx;
 								area_R=1.0-area_L;
 								BN_C2U(C,U,i,j,0);
-								primitive_comp(U, &U_L[i][j], &U_R[i][j], U_L[i][j].z_s, U_R[i][j].z_s, Z_sL[i][j], Z_sR[i][j], area_L, area_R);
+								primitive_comp(U, &U_L[i][j], &U_R[i][j], U_L[i][j].z_s, U_R[i][j].z_s, C.Z_sS_xd[i][j_1], C.Z_sS_xd[i][j], area_L, area_R);
 								BN_ULR2cons(U_L,U_R,C,i,j);
 							}
 				}
@@ -369,44 +380,47 @@ void finite_volume_scheme_GRP2D(struct flu_var * FV, const struct mesh_var * mv,
 								iR = i<n_y?i:n_y-1;
 								z_smid = U_R[iL][j].z_s;
 								z_gmid = 1.0-z_smid;
-								GRP_var_init(&GL, SV, U_R, dy, iL, j, 0);
-								GRP_var_init(&GR, SV, U_L, dy, iR, j, 1);
-
-								linear_GRP_solver_Edir_Q1D(wave_speed, dire, mid, star, 0.0, 0.0, GL.rho_g, GR.rho_g, GL.rho_gy, GR.rho_gy, -GL.rho_gx, -GR.rho_gx, GL.v_g, GR.v_g, GL.v_gy, GR.v_gy, -GL.v_gx, -GR.v_gx, -GL.u_g, -GR.u_g, -GL.u_gy, -GR.u_gy, GL.u_gx, GR.u_gx, GL.p_g, GR.p_g, GL.p_gy, GR.p_gy, -GL.p_gx, -GR.p_gx, 0.0, 0.0, -0.0, -0.0, -0.0, -0.0, 0.0, 0.0, -0.0, -0.0, -0.0, -0.0, gamma_g, gamma_g, eps, eps);
-								Z_s_MIDy[i][j] = z_smid;
-								rho_gmid = mid[0] + 0.5*tau*dire[0];
-								u_gmid   =-mid[2] - 0.5*tau*dire[2];
-								v_gmid   = mid[1] + 0.5*tau*dire[1];
-								p_gmid   = mid[3] + 0.5*tau*dire[3];
+								GRP_var_init(&GL, SV, U_R, dy, iL, j, 2);
+								GRP_var_init(&GR, SV, U_L, dy, iR, j, 3);
+								GRP_RI_var_init(&RI_L, SV, C, dx, iL, j, 2);
+								GRP_RI_var_init(&RI_R, SV, C, dx, iR, j, 3);
+								RI_LR2G_LR(&RI_L,&GL,z_smid,1);
+								RI_LR2G_LR(&RI_R,&GR,z_smid,1);
+								linear_GRP_solver_Edir_Q1D(wave_speed, dire, mid_g, star, 0.0, 0.0, GL.rho_g, GR.rho_g, GL.rho_gy, GR.rho_gy, -GL.rho_gx, -GR.rho_gx, GL.v_g, GR.v_g, GL.v_gy, GR.v_gy, -GL.v_gx, -GR.v_gx, -GL.u_g, -GR.u_g, -GL.u_gy, -GR.u_gy, GL.u_gx, GR.u_gx, GL.p_g, GR.p_g, GL.p_gy, GR.p_gy, -GL.p_gx, -GR.p_gx, 0.0, 0.0, -0.0, -0.0, -0.0, -0.0, 0.0, 0.0, -0.0, -0.0, -0.0, -0.0, gamma_g, gamma_g, eps, eps);
+								rho_gmid = mid_g[0] + 0.5*tau*dire[0];
+								u_gmid   =-mid_g[2] - 0.5*tau*dire[2];
+								v_gmid   = mid_g[1] + 0.5*tau*dire[1];
+								p_gmid   = mid_g[3] + 0.5*tau*dire[3];
 								FX.RHO_F_gy[i][j] = z_gmid*rho_gmid*v_gmid;
 								FX.U_F_gy[i][j]   = FX.RHO_F_gy[i][j]*u_gmid;
 								FX.V_F_gy[i][j]   = FX.RHO_F_gy[i][j]*v_gmid + z_gmid*p_gmid;
 								FX.E_F_gy[i][j]   = gamma_g/(gamma_g-1.0)*p_gmid/rho_gmid + 0.5*(u_gmid*u_gmid + v_gmid*v_gmid);
 								FX.E_F_gy[i][j]   = FX.RHO_F_gy[i][j]*FX.E_F_gy[i][j];
 
-								linear_GRP_solver_Edir_Q1D(wave_speed, dire, mid, star, 0.0, 0.0, GL.rho_s, GR.rho_s, GL.rho_sy, GR.rho_sy, -GL.rho_sx, -GR.rho_sx, GL.v_s, GR.v_s, GL.v_sy, GR.v_sy, -GL.v_sx, -GR.v_sx, -GL.u_s, -GR.u_s, -GL.u_sy, -GR.u_sy, GL.u_sx, GR.u_sx, GL.p_s, GR.p_s, GL.p_sy, GR.p_sy, -GL.p_sx, -GR.p_sx, 0.0, 0.0, -0.0, -0.0, -0.0, -0.0, 0.0, 0.0, -0.0, -0.0, -0.0, -0.0, gamma_s, gamma_s, eps, eps);
-								rho_smid = mid[0] + 0.5*tau*dire[0];
-								u_smid   =-mid[2] - 0.5*tau*dire[2];
-								v_smid   = mid[1] + 0.5*tau*dire[1];
-								p_smid   = mid[3] + 0.5*tau*dire[3];
+								linear_GRP_solver_Edir_Q1D(wave_speed, dire, mid_s, star, 0.0, 0.0, GL.rho_s, GR.rho_s, GL.rho_sy, GR.rho_sy, -GL.rho_sx, -GR.rho_sx, GL.v_s, GR.v_s, GL.v_sy, GR.v_sy, -GL.v_sx, -GR.v_sx, -GL.u_s, -GR.u_s, -GL.u_sy, -GR.u_sy, GL.u_sx, GR.u_sx, GL.p_s, GR.p_s, GL.p_sy, GR.p_sy, -GL.p_sx, -GR.p_sx, 0.0, 0.0, -0.0, -0.0, -0.0, -0.0, 0.0, 0.0, -0.0, -0.0, -0.0, -0.0, gamma_s, gamma_s, eps, eps);
+								rho_smid = mid_s[0] + 0.5*tau*dire[0];
+								u_smid   =-mid_s[2] - 0.5*tau*dire[2];
+								v_smid   = mid_s[1] + 0.5*tau*dire[1];
+								p_smid   = mid_s[3] + 0.5*tau*dire[3];
 								FX.P_s_MIDy[i][j] = p_smid;
 								FX.RHO_F_sy[i][j] = z_smid*rho_smid*v_smid;
 								FX.U_F_sy[i][j]   = FX.RHO_F_sy[i][j]*u_smid;
 								FX.V_F_sy[i][j]   = FX.RHO_F_sy[i][j]*v_smid + z_smid*p_smid;
 								FX.E_F_sy[i][j]   = gamma_s/(gamma_s-1.0)*p_smid/rho_smid + 0.5*(u_smid*u_smid + v_smid*v_smid);
 								FX.E_F_sy[i][j]   = FX.RHO_F_sy[i][j]*FX.E_F_sy[i][j];
+								FX.Z_s_MIDy[i][j] = z_smid;
 							}
 					for(j = 0; j <  n_x; ++j)
 						for(i = 0; i <= n_y; ++i)
 							{
 								iL = i-1>0?i-1:0;
 								iR = i<n_y?i:n_y-1;
-								z_sxL = Z_sx[iL][j];
-								z_sxR = Z_sx[iR][j];
-								z_syL = Z_sy[iL][j];
-								z_syR = Z_sy[iR][j];
-								z_sL =Z_sC[iL][j]+dy/2*z_syL;
-								z_sR =Z_sC[iR][j]-dy/2*z_syR;
+								z_sxL = SV.Z_sx[iL][j];
+								z_sxR = SV.Z_sx[iR][j];
+								z_syL = SV.Z_sy[iL][j];
+								z_syR = SV.Z_sy[iR][j];
+								z_sL = C.Z_sC[iL][j]+dy/2*z_syL;
+								z_sR = C.Z_sC[iR][j]-dy/2*z_syR;
 								jp1 = j<n_x-1?j+1:n_x-1;
 								stag_RHO_F_sy[i][j] = 0.5*(U_R[i][j].rho_s*U_R[i][j].u_s+U_R[i][jp1].rho_s*U_R[i][jp1].u_s);
 								if ((U_R[i][j].u_s + U_R[i][jp1].u_s) > 0.0)
@@ -419,40 +433,39 @@ void finite_volume_scheme_GRP2D(struct flu_var * FV, const struct mesh_var * mv,
 							{
 								ip1 = i<n_y-1?i+1:n_y-1;
 								jp1 = j<n_x-1?j+1:n_x-1;
-								RHO_s_cell  = 0.25*(RHO_sC[i][j]+RHO_sC[ip1][j]+RHO_sC[i][jp1]+RHO_sC[ip1][jp1]);
+								RHO_s_cell  = 0.25*(C.RHO_sC[i][j]+C.RHO_sC[ip1][j]+C.RHO_sC[i][jp1]+C.RHO_sC[ip1][jp1]);
 								//ZRHO_s_cell = 0.25*(ZRHO_sC[i][j]+ZRHO_sC[ip1][j]+ZRHO_sC[i][jp1]+ZRHO_sC[ip1][jp1]);
-								ZRHO_s_cell = RHO_s_cell*Z_sC[i][j];
+								ZRHO_s_cell = RHO_s_cell*C.Z_sC[i][j];
 								RHO_s_cell  -=tau*(stag_RHO_F_sy[i+1][j] -stag_RHO_F_sy[i][j])/dy;
 								ZRHO_s_cell -=tau*(stag_ZRHO_F_sy[i+1][j]-stag_ZRHO_F_sy[i][j])/dy;
-								Z_sC[i][j]   =ZRHO_s_cell/RHO_s_cell;
+								C.Z_sC[i][j]   =ZRHO_s_cell/RHO_s_cell;
+							}
+					for(j = 0; j < n_x; ++j)
+						for(i = 0; i < n_y; ++i)
+							{
+								j_1=j-1>0?j-1:0;
+								C.Z_sS_yd[i][j] = 0.5*(C.Z_sC[i][j_1]+C.Z_sC[i][j]);
 							}
 					for(j = 0; j < n_x; ++j)
 						for(i = 0; i < n_y; ++i)
 							{
 								i_1=i-1>0?i-1:0;
-								j_1=j-1>0?j-1:0;
-								Z_sL[i][j] = 0.5*(Z_sC[i_1][j_1]+Z_sC[i_1][j]);
-								Z_sR[i][j] = 0.5*(Z_sC[i][j_1]+Z_sC[i][j]);
-							}
-					for(j = 0; j < n_x; ++j)
-						for(i = 0; i < n_y; ++i)
-							{
 								if(fabs(U_R[i][j].z_s-U_L[i][j].z_s)<eps)
-									S = P_gC[i][j]*(U_R[i][j].z_s-U_L[i][j].z_s);
+									S = C.P_gC[i][j]*(U_R[i][j].z_s-U_L[i][j].z_s);
 								else
-									S = U_R[i][j].z_s*P_s_MIDy[i+1][j]-U_L[i][j].z_s*P_s_MIDy[i][j];
-								ZRHO_gC[i][j] -= tau*(RHO_F_gy[i+1][j]-RHO_F_gy[i][j])/dy;
-								RHO_U_gC[i][j]-= tau*(U_F_gy[i+1][j]  -U_F_gy[i][j])  /dy;
-								RHO_V_gC[i][j]-= tau*(V_F_gy[i+1][j]  -V_F_gy[i][j])  /dy-tau/dx*S;
-								E_gC[i][j]    -= tau*(E_F_gy[i+1][j]  -E_F_gy[i][j])  /dy-tau/dx*S*V_sC[i][j];
-								ZRHO_sC[i][j] -= tau*(RHO_F_sy[i+1][j]-RHO_F_sy[i][j])/dy;
-								RHO_U_sC[i][j]-= tau*(U_F_sy[i+1][j]  -U_F_sy[i][j])  /dy;
-								RHO_V_sC[i][j]-= tau*(V_F_sy[i+1][j]  -V_F_sy[i][j])  /dy+tau/dx*S;
-								E_sC[i][j]    -= tau*(E_F_sy[i+1][j]  -E_F_sy[i][j])  /dy+tau/dx*S*V_sC[i][j];
-								area_L=0.5+V_sC[i][j]*tau/dx;
+									S = U_R[i][j].z_s*FX.P_s_MIDy[i+1][j]-U_L[i][j].z_s*FX.P_s_MIDy[i][j];
+								C.ZRHO_gC[i][j] -= tau*(FX.RHO_F_gy[i+1][j]-FX.RHO_F_gy[i][j])/dy;
+								C.RHO_U_gC[i][j]-= tau*(FX.U_F_gy[i+1][j]  -FX.U_F_gy[i][j])  /dy;
+								C.RHO_V_gC[i][j]-= tau*(FX.V_F_gy[i+1][j]  -FX.V_F_gy[i][j])  /dy-tau/dx*S;
+								C.E_gC[i][j]    -= tau*(FX.E_F_gy[i+1][j]  -FX.E_F_gy[i][j])  /dy-tau/dx*S*C.V_sC[i][j];
+								C.ZRHO_sC[i][j] -= tau*(FX.RHO_F_sy[i+1][j]-FX.RHO_F_sy[i][j])/dy;
+								C.RHO_U_sC[i][j]-= tau*(FX.U_F_sy[i+1][j]  -FX.U_F_sy[i][j])  /dy;
+								C.RHO_V_sC[i][j]-= tau*(FX.V_F_sy[i+1][j]  -FX.V_F_sy[i][j])  /dy+tau/dx*S;
+								C.E_sC[i][j]    -= tau*(FX.E_F_sy[i+1][j]  -FX.E_F_sy[i][j])  /dy+tau/dx*S*C.V_sC[i][j];
+								area_L=0.5+C.V_sC[i][j]*tau/dx;
 								area_R=1.0-area_L;
 								BN_C2U(C,U,i,j,1);
-								primitive_comp(U, &U_L[i][j], &U_R[i][j], U_L[i][j].z_s, U_R[i][j].z_s, Z_sL[i][j], Z_sR[i][j], area_L, area_R);
+								primitive_comp(U, &U_L[i][j], &U_R[i][j], U_L[i][j].z_s, U_R[i][j].z_s, C.Z_sS_yd[i_1][j], C.Z_sS_yd[i][j], area_L, area_R);
 								BN_ULR2cons(U_L,U_R,C,i,j);
 							}
 				}

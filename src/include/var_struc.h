@@ -62,7 +62,7 @@ struct i_f_var {
 	double RHO_minus_c, P_minus_c, U_qt_minus_c, V_qt_minus_c, gamma_minus_c;
 	double RHO_add_c,   P_add_c,   U_qt_add_c,   V_qt_add_c,   gamma_add_c;
 	double u_star, u_minus_c, u_add_c;
-	double   RHO_int,   P_int,    U_int,   V_int;
+	double RHO_int,  P_int,  U_int,  V_int;
 };
 
 //Riemann invariants
@@ -84,6 +84,12 @@ struct GRP_LR_var {
 	double rho_sy, p_sy, u_sy, v_sy;
 };
 
+struct GRP_RI_LR_var {
+	double Q,  P,  H,  eta_g;
+	double Qx, Px, Hx, eta_gx;
+	double Qy, Py, Hy, eta_gy;
+};
+
 //BN
 struct slope_var {
 	double **Z_sx, **Z_sy;
@@ -91,6 +97,9 @@ struct slope_var {
 	double **RHO_gy, **P_gy, **U_gy, **V_gy;
 	double **RHO_sx, **P_sx, **U_sx, **V_sx;
 	double **RHO_sy, **P_sy, **U_sy, **V_sy;
+	double **Q_x, **P_x, **H_x, **eta_g_x;
+	double **Q_y, **P_y, **H_y, **eta_g_y;
+	double **Z_sS_x, **Z_sS_y;
 };
 
 struct face_var {
@@ -114,8 +123,7 @@ struct center_var {
 	double **RHO_U_sC, **RHO_V_sC, **E_sC;
 	double **Q_xd, **P_xd, **H_xd, **eta_g_xd;
 	double **Q_yd, **P_yd, **H_yd, **eta_g_yd;
-	double **Z_sL_xd, **Z_sR_xd;
-	double **Z_sL_yd, **Z_sR_yd;
+	double **Z_sS_xd, **Z_sS_yd;
 };
 
 struct flux_var {

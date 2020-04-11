@@ -3,10 +3,9 @@
 #include <string.h>
 #include <math.h>
 
-
 #include "../include/var_struc.h"
 #include "../include/tools.h"
-
+#include "../include/finite_volume.h"
 
 //center_var 2 U
 void BN_C2U(struct center_var C, double *U, int i, int j, int U_or_V)
@@ -72,7 +71,7 @@ void BN_RI2Cy(struct RI_var RI, struct center_var C, int i, int j)
 	C.eta_g_yd[i][j]=RI.eta_g;
 }
 
-void GRP_var_init(struct GRP_LR_var *G, struct slope_var SV, struct U_var U[][(int)config[13]], double d, int i, int j, int p_or_m)
+void GRP_var_init(struct GRP_LR_var *G, struct slope_var SV, struct U_var U[][(int)config[13]], double d, int i, int j, int pm_xy)
 {
 	G->rho_gx=SV.RHO_gx[i][j];
 	G->p_gx=SV.P_gx[i][j];
@@ -91,7 +90,7 @@ void GRP_var_init(struct GRP_LR_var *G, struct slope_var SV, struct U_var U[][(i
 	G->u_sy=SV.U_sy[i][j];
 	G->v_sy=SV.V_sy[i][j];
 
-	switch(p_or_m)
+	switch(pm_xy)
 		{
 		case 0:
 			G->rho_g =U[i][j].rho_g+d/2*G->rho_gx;
@@ -111,6 +110,124 @@ void GRP_var_init(struct GRP_LR_var *G, struct slope_var SV, struct U_var U[][(i
 			G->p_s =U[i][j].p_s-d/2*G->p_sx;
 			G->u_s =U[i][j].u_s-d/2*G->u_sx;
 			G->v_s =U[i][j].v_s-d/2*G->v_sx;
+			break;
+		case 2:
+			G->rho_g =U[i][j].rho_g+d/2*G->rho_gy;
+			G->p_g =U[i][j].p_g+d/2*G->p_gy;
+			G->u_g =U[i][j].u_g+d/2*G->u_gy;
+			G->v_g =U[i][j].v_g+d/2*G->v_gy;
+			G->rho_s =U[i][j].rho_s+d/2*G->rho_sy;
+			G->p_s =U[i][j].p_s+d/2*G->p_sy;
+			G->u_s =U[i][j].u_s+d/2*G->u_sy;
+			G->v_s =U[i][j].v_s+d/2*G->v_sy;
+			break;
+		case 3:
+			G->rho_g =U[i][j].rho_g-d/2*G->rho_gy;
+			G->p_g =U[i][j].p_g-d/2*G->p_gy;
+			G->u_g =U[i][j].u_g-d/2*G->u_gy;
+			G->v_g =U[i][j].v_g-d/2*G->v_gy;
+			G->rho_s =U[i][j].rho_s-d/2*G->rho_sy;
+			G->p_s =U[i][j].p_s-d/2*G->p_sy;
+			G->u_s =U[i][j].u_s-d/2*G->u_sy;
+			G->v_s =U[i][j].v_s-d/2*G->v_sy;
+			break;
+		}
+}
+	
+void GRP_RI_var_init(struct GRP_RI_LR_var *GRI, struct slope_var SV, struct center_var C, double d, int i, int j, int pm_xy)
+{
+	GRI->Qx=SV.Q_x[i][j];
+	GRI->Px=SV.P_x[i][j];
+	GRI->Hx=SV.H_x[i][j];
+	GRI->eta_gx=SV.eta_g_x[i][j];
+	GRI->Qy=SV.Q_y[i][j];
+	GRI->Py=SV.P_y[i][j];
+	GRI->Hy=SV.H_y[i][j];
+	GRI->eta_gy=SV.eta_g_y[i][j];
+	switch(pm_xy)
+		{
+		case 0:
+			GRI->Q     =C.Q_xd[i][j]+d/2*GRI->Qx;
+			GRI->P     =C.P_xd[i][j]+d/2*GRI->Px;
+			GRI->H     =C.H_xd[i][j]+d/2*GRI->Hx;
+			GRI->eta_g =C.eta_g_xd[i][j]+d/2*GRI->eta_gx;
+			break;
+		case 1:
+			GRI->Q     =C.Q_xd[i][j]-d/2*GRI->Qx;
+			GRI->P     =C.P_xd[i][j]-d/2*GRI->Px;
+			GRI->H     =C.H_xd[i][j]-d/2*GRI->Hx;
+			GRI->eta_g =C.eta_g_xd[i][j]-d/2*GRI->eta_gx;			
+			break;			
+		case 2:
+			GRI->Q     =C.Q_yd[i][j]+d/2*GRI->Qy;
+			GRI->P     =C.P_yd[i][j]+d/2*GRI->Py;
+			GRI->H     =C.H_yd[i][j]+d/2*GRI->Hy;
+			GRI->eta_g =C.eta_g_yd[i][j]+d/2*GRI->eta_gy;
+			break;
+		case 3:
+			GRI->Q     =C.Q_yd[i][j]-d/2*GRI->Qy;
+			GRI->P     =C.P_yd[i][j]-d/2*GRI->Py;
+			GRI->H     =C.H_yd[i][j]-d/2*GRI->Hy;
+			GRI->eta_g =C.eta_g_yd[i][j]-d/2*GRI->eta_gy;			
+			break;
+		}	
+}
+
+void RI_LR2G_LR(const struct GRP_RI_LR_var *GRI, struct GRP_LR_var *G, double z_s, int x_or_y)
+{	
+	struct U_var U;
+	struct RI_var RI;
+	RI.Q=GRI->Q;
+	RI.P=GRI->P;
+	RI.H=GRI->H;
+	RI.eta_g=GRI->eta_g;
+	RI.z_s=z_s;
+	RI.rho_s=G->rho_s;
+	switch(x_or_y)
+		{
+		case 0:		
+			RI.u_s=G->u_s;
+			break;
+		case 1:
+			RI.u_s=G->v_s;
+			break;
+		}
+	RI2U_cal(&U, &RI, z_s, G->rho_g);
+	G->rho_g =U.rho_g;
+	G->p_g =U.p_g;
+	G->rho_s =U.rho_s;
+	G->p_s =U.p_s;
+	switch(x_or_y)
+		{
+		case 0:		
+			G->u_g =U.u_g;
+			G->v_g =G->v_g;
+			G->u_s =U.u_g;
+			G->v_s =G->v_g;
+			break;
+		case 1:
+			G->v_g =U.u_g;
+			G->u_g =G->u_g;
+			G->v_s =U.u_g;
+			G->u_s =G->u_g;
 			break;			
 		}
+	/*	
+	G->rho_gx =0.0;
+	G->p_gx =0.0;
+	G->u_gx =0.0;
+	G->v_gx =0.0;
+	G->rho_sx =0.0;
+	G->p_sx =0.0;
+	G->u_sx =0.0;
+	G->v_sx =0.0;
+	G->rho_gy =0.0;
+	G->p_gy =0.0;
+	G->u_gy =0.0;
+	G->v_gy =0.0;
+	G->rho_sy =0.0;
+	G->p_sy =0.0;
+	G->u_sy =0.0;
+	G->v_sy =0.0;
+	*/
 }
