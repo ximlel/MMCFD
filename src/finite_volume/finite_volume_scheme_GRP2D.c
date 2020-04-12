@@ -184,7 +184,7 @@ void finite_volume_scheme_GRP2D(struct flu_var * FV, const struct mesh_var * mv,
 	double a_g, a_s, S_max, S_max_g, S_max_s;
 	double wave_speed[2], dire[6], mid_s[6], mid_g[6], star[6];
 	struct GRP_LR_var GL, GR;
-	struct U_var U_L[n_y][n_x], U_R[n_y][n_x];
+	struct U_var U_L[n_y][n_x], U_R[n_y][n_x], U_tmp;
 	struct RI_var RI;
 	struct GRP_RI_LR_var RI_L, RI_R;
 	double U[8];
@@ -280,8 +280,7 @@ void finite_volume_scheme_GRP2D(struct flu_var * FV, const struct mesh_var * mv,
 								jR = j<n_x?j:n_x-1;
 								z_smid = U_R[i][jL].z_s;
 								z_gmid = 1.0-z_smid;
-	z_sx_mid;
-	z_sy_mid;
+								z_sx_mid = SV.Z_sS_x[i][j];
 								GRP_var_init(&GL, SV, U_R, dx, i, jL, 0);
 								GRP_var_init(&GR, SV, U_L, dx, i, jR, 1);
 								GRP_RI_var_init(&RI_L, SV, C, dx, i, jL, 0);
@@ -293,23 +292,33 @@ void finite_volume_scheme_GRP2D(struct flu_var * FV, const struct mesh_var * mv,
 								u_gmid   = mid_g[1] + 0.5*tau*dire[1];
 								v_gmid   = mid_g[2] + 0.5*tau*dire[2];
 								p_gmid   = mid_g[3] + 0.5*tau*dire[3];
-								FX.RHO_F_gx[i][j] = z_gmid*rho_gmid*u_gmid;
-								FX.U_F_gx[i][j]   = FX.RHO_F_gx[i][j]*u_gmid + z_gmid*p_gmid;
-								FX.V_F_gx[i][j]   = FX.RHO_F_gx[i][j]*v_gmid;
-								FX.E_F_gx[i][j]   = gamma_g/(gamma_g-1.0)*p_gmid/rho_gmid + 0.5*(u_gmid*u_gmid + v_gmid*v_gmid);
-								FX.E_F_gx[i][j]   = FX.RHO_F_gx[i][j]*FX.E_F_gx[i][j];
-
 								linear_GRP_solver_Edir_Q1D(wave_speed, dire, mid_s, star, 0.0, 0.0, GL.rho_s, GR.rho_s, GL.rho_sx, GR.rho_sx, GL.rho_sy, GR.rho_sy, GL.u_s, GR.u_s, GL.u_sx, GR.u_sx, GL.u_sy, GR.u_sy, GL.v_s, GR.v_s, GL.v_sx, GR.v_sx, GL.v_sy, GR.v_sy, GL.p_s, GR.p_s, GL.p_sx, GR.p_sx, GL.p_sy, GR.p_sy, 0.0, 0.0, -0.0, -0.0, -0.0, -0.0, 0.0, 0.0, -0.0, -0.0, -0.0, -0.0, gamma_s, gamma_s, eps, eps);
 								rho_smid = mid_s[0] + 0.5*tau*dire[0];
 								u_smid   = mid_s[1] + 0.5*tau*dire[1];
 								v_smid   = mid_s[2] + 0.5*tau*dire[2];
 								p_smid   = mid_s[3] + 0.5*tau*dire[3];
-								FX.P_s_MIDx[i][j] = p_smid;
+								linear_GRP_RI_solver_BN(&RI, z_sx_mid, z_smid, mid_g, mid_s, RI_L, RI_R, GL, GR, gamma_s, gamma_g, eps, tau, 0);
+								RI2U_cal(&U_tmp, &RI, RI.z_s, rho_gmid);
+								rho_gmid = U_tmp.rho_g;
+								u_gmid   = U_tmp.u_g;
+								v_gmid   = mid_g[2];
+								p_gmid   = U_tmp.p_g;
+								rho_smid = U_tmp.rho_s;
+								u_smid   = U_tmp.u_s;
+								v_smid   = mid_s[2];
+								p_smid   = U_tmp.p_s;
+
+								FX.RHO_F_gx[i][j] = z_gmid*rho_gmid*u_gmid;
+								FX.U_F_gx[i][j]   = FX.RHO_F_gx[i][j]*u_gmid + z_gmid*p_gmid;
+								FX.V_F_gx[i][j]   = FX.RHO_F_gx[i][j]*v_gmid;
+								FX.E_F_gx[i][j]   = gamma_g/(gamma_g-1.0)*p_gmid/rho_gmid + 0.5*(u_gmid*u_gmid + v_gmid*v_gmid);
+								FX.E_F_gx[i][j]   = FX.RHO_F_gx[i][j]*FX.E_F_gx[i][j];
 								FX.RHO_F_sx[i][j] = z_smid*rho_smid*u_smid;
 								FX.U_F_sx[i][j]   = FX.RHO_F_sx[i][j]*u_smid + z_smid*p_smid;
 								FX.V_F_sx[i][j]   = FX.RHO_F_sx[i][j]*v_smid;
 								FX.E_F_sx[i][j]   = gamma_s/(gamma_s-1.0)*p_smid/rho_smid + 0.5*(u_smid*u_smid + v_smid*v_smid);
 								FX.E_F_sx[i][j]   = FX.RHO_F_sx[i][j]*FX.E_F_sx[i][j];
+								FX.P_s_MIDx[i][j] = p_smid;
 								FX.Z_s_MIDx[i][j] = z_smid;
 							}
 					for(i = 0; i < n_y; ++i)
@@ -380,6 +389,7 @@ void finite_volume_scheme_GRP2D(struct flu_var * FV, const struct mesh_var * mv,
 								iR = i<n_y?i:n_y-1;
 								z_smid = U_R[iL][j].z_s;
 								z_gmid = 1.0-z_smid;
+								z_sy_mid = SV.Z_sS_y[i][j];
 								GRP_var_init(&GL, SV, U_R, dy, iL, j, 2);
 								GRP_var_init(&GR, SV, U_L, dy, iR, j, 3);
 								GRP_RI_var_init(&RI_L, SV, C, dx, iL, j, 2);
@@ -391,23 +401,33 @@ void finite_volume_scheme_GRP2D(struct flu_var * FV, const struct mesh_var * mv,
 								u_gmid   =-mid_g[2] - 0.5*tau*dire[2];
 								v_gmid   = mid_g[1] + 0.5*tau*dire[1];
 								p_gmid   = mid_g[3] + 0.5*tau*dire[3];
-								FX.RHO_F_gy[i][j] = z_gmid*rho_gmid*v_gmid;
-								FX.U_F_gy[i][j]   = FX.RHO_F_gy[i][j]*u_gmid;
-								FX.V_F_gy[i][j]   = FX.RHO_F_gy[i][j]*v_gmid + z_gmid*p_gmid;
-								FX.E_F_gy[i][j]   = gamma_g/(gamma_g-1.0)*p_gmid/rho_gmid + 0.5*(u_gmid*u_gmid + v_gmid*v_gmid);
-								FX.E_F_gy[i][j]   = FX.RHO_F_gy[i][j]*FX.E_F_gy[i][j];
-
 								linear_GRP_solver_Edir_Q1D(wave_speed, dire, mid_s, star, 0.0, 0.0, GL.rho_s, GR.rho_s, GL.rho_sy, GR.rho_sy, -GL.rho_sx, -GR.rho_sx, GL.v_s, GR.v_s, GL.v_sy, GR.v_sy, -GL.v_sx, -GR.v_sx, -GL.u_s, -GR.u_s, -GL.u_sy, -GR.u_sy, GL.u_sx, GR.u_sx, GL.p_s, GR.p_s, GL.p_sy, GR.p_sy, -GL.p_sx, -GR.p_sx, 0.0, 0.0, -0.0, -0.0, -0.0, -0.0, 0.0, 0.0, -0.0, -0.0, -0.0, -0.0, gamma_s, gamma_s, eps, eps);
 								rho_smid = mid_s[0] + 0.5*tau*dire[0];
 								u_smid   =-mid_s[2] - 0.5*tau*dire[2];
 								v_smid   = mid_s[1] + 0.5*tau*dire[1];
 								p_smid   = mid_s[3] + 0.5*tau*dire[3];
-								FX.P_s_MIDy[i][j] = p_smid;
+								linear_GRP_RI_solver_BN(&RI, z_sy_mid, z_smid, mid_g, mid_s, RI_L, RI_R, GL, GR, gamma_s, gamma_g, eps, tau, 1);
+								RI2U_cal(&U_tmp, &RI, RI.z_s, rho_gmid);
+								rho_gmid = U_tmp.rho_g;
+								u_gmid   =-mid_g[2];
+								v_gmid   = U_tmp.u_g;
+								p_gmid   = U_tmp.p_g;
+								rho_smid = U_tmp.rho_s;
+								u_smid   =-mid_s[2];
+								v_smid   = U_tmp.u_s;
+								p_smid   = U_tmp.p_s;
+
+								FX.RHO_F_gy[i][j] = z_gmid*rho_gmid*v_gmid;
+								FX.U_F_gy[i][j]   = FX.RHO_F_gy[i][j]*u_gmid;
+								FX.V_F_gy[i][j]   = FX.RHO_F_gy[i][j]*v_gmid + z_gmid*p_gmid;
+								FX.E_F_gy[i][j]   = gamma_g/(gamma_g-1.0)*p_gmid/rho_gmid + 0.5*(u_gmid*u_gmid + v_gmid*v_gmid);
+								FX.E_F_gy[i][j]   = FX.RHO_F_gy[i][j]*FX.E_F_gy[i][j];
 								FX.RHO_F_sy[i][j] = z_smid*rho_smid*v_smid;
 								FX.U_F_sy[i][j]   = FX.RHO_F_sy[i][j]*u_smid;
 								FX.V_F_sy[i][j]   = FX.RHO_F_sy[i][j]*v_smid + z_smid*p_smid;
 								FX.E_F_sy[i][j]   = gamma_s/(gamma_s-1.0)*p_smid/rho_smid + 0.5*(u_smid*u_smid + v_smid*v_smid);
 								FX.E_F_sy[i][j]   = FX.RHO_F_sy[i][j]*FX.E_F_sy[i][j];
+								FX.P_s_MIDy[i][j] = p_smid;
 								FX.Z_s_MIDy[i][j] = z_smid;
 							}
 					for(j = 0; j <  n_x; ++j)

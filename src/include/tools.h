@@ -15,8 +15,12 @@ int CreateDir(const char* pPath);
  * \param a The pointer of the input square matrix.
  * \param[in] n The order of the input square matrix.
  */
+
+void mat_mul(double A[], double B[], double C[], int m, int p, int n);
+void mat_add(double A[], double B[], double C[], int m, int n);
+void mat_sub(double A[], double B[], double C[], int m, int n);
 int rinv(double a[], int n);
-double rnd( double *r);
 void Gauss_elimination(int n, double (*a)[n+1], double *x);
+double rnd( double *r);
 
 #endif

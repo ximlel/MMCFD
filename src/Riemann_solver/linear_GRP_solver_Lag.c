@@ -1,8 +1,8 @@
 #include <math.h>
 #include <stdio.h>
 
+#include "../include/var_struc.h"
 #include "../include/Riemann_solver.h"
-
 
 
 void linear_GRP_solver_Lag

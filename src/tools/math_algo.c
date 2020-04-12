@@ -3,9 +3,44 @@
 #include <math.h>
 
 
+void mat_add(double A[], double B[], double C[], int m, int n) 
+{
+	int i,j;
+	for (i = 0; i < m; i++)
+		for (j = 0; j < n; j++)
+			C[i*n+j] = A[i*n+j] + B[i*n+j];
+}
+
+void mat_sub(double A[], double B[], double C[], int m, int n)
+{
+	int i, j;
+	for (i = 0; i < m; i++)
+		for (j = 0; j < n; j++)
+			C[i*n+j] = A[i*n+j] - B[i*n+j];
+}
+
+void mat_mul(double A[], double B[], double C[], int m, int p, int n)
+{
+	int i,j,k;
+	double A0[m][n], B0[n][p];
+	for (i = 0; i < m; i++)
+		for (k = 0; k < n; k++)
+			A0[i][k] = A[i*n+k];
+	for (k = 0; k < n; k++)
+		for (j = 0; j < p; j++)
+			B0[k][j] = B[k*p+j];
+	for (i = 0; i < m; i++)
+		for (j = 0; j < p; j++)
+			{
+				C[i*p+j] = 0.0;
+				for (k = 0; k < n; k++)
+					C[i*p+j] += A0[i][k] * B0[k][j];
+			}
+}
+
 int rinv(double a[], int n)
 {
-	int *is,*js,i,j,k,l,u,v;
+    int *is,*js,i,j,k,l,u,v;
     double d,p;
     is=malloc(n*sizeof(int));
     js=malloc(n*sizeof(int));

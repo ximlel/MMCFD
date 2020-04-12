@@ -3,9 +3,8 @@
 #include <string.h>
 #include <math.h>
 
-
-#include "../include/Riemann_solver.h"
 #include "../include/var_struc.h"
+#include "../include/Riemann_solver.h"
 
 void Roe_scheme(struct i_f_var * ifv, struct i_f_var * ifv_R)
 {
