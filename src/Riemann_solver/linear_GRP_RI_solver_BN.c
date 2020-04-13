@@ -7,21 +7,14 @@
 
 void linear_GRP_RI_solver_BN
 (struct RI_var *RI, const double D_z_s, const double z_s, const double *mid_g, const double *mid_s, 
- const struct GRP_RI_LR_var RI_L, const struct GRP_RI_LR_var RI_R, const struct GRP_LR_var GL, const struct GRP_LR_var GR,
+ const struct GRP_LR_var GL, const struct GRP_LR_var GR,
  const double gamma_s, const double gamma_g, const double eps, const double tau, const int x_or_y)
 {
 	double z_g = 1.0-z_s;
 	double rho_g = mid_g[0], u_g, p_g = mid_g[3];
 	double rho_s = mid_s[0], u_s, p_s = mid_s[3];
-	switch(x_or_y)
-		{
-		case 0:
-			u_g = mid_g[1];
-			u_s = mid_s[1];
-		case 1:
-			u_g = mid_g[2];
-			u_s = mid_s[2];			
-		}
+	u_g = mid_g[1];
+	u_s = mid_s[1];
 	double c_s, c_g;
 	c_s = sqrt(gamma_s * p_s / rho_s);
 	c_g = sqrt(gamma_g * p_g / rho_g);
@@ -43,35 +36,36 @@ void linear_GRP_RI_solver_BN
 	double D_L[7], D_R[7];
 	D_L[0] = D_z_s;
 	D_R[0] = D_z_s;
-	switch(x_or_y)
-		{
-		case 0:
-			D_L[1] = GL.rho_sx;
-			D_L[2] = GL.u_sx;
-			D_L[3] = RI_L.Px;
-			D_L[4] = RI_L.Qx;
-			D_L[5] = RI_L.Hx;
-			D_L[6] = RI_L.eta_gx;
-			D_R[1] = GR.rho_sx;
-			D_R[2] = GR.u_sx;
-			D_R[3] = RI_R.Px;
-			D_R[4] = RI_R.Qx;
-			D_R[5] = RI_R.Hx;
-			D_R[6] = RI_R.eta_gx;			
-		case 1:
-			D_L[1] = GL.rho_sy;
-			D_L[2] = GL.u_sy;
-			D_L[3] = RI_L.Py;
-			D_L[4] = RI_L.Qy;
-			D_L[5] = RI_L.Hy;
-			D_L[6] = RI_L.eta_gy;
-			D_R[1] = GR.rho_sy;
-			D_R[2] = GR.u_sy;
-			D_R[3] = RI_R.Py;
-			D_R[4] = RI_R.Qy;
-			D_R[5] = RI_R.Hy;
-			D_R[6] = RI_R.eta_gy;					
-		}
+	switch(x_or_y) {
+	case 0:
+		D_L[1] = GL.rho_sx;
+		D_L[2] = GL.u_sx;
+		D_L[3] = GL.Px;
+		D_L[4] = GL.Qx;
+		D_L[5] = GL.Hx;
+		D_L[6] = GL.eta_gx;
+		D_R[1] = GR.rho_sx;
+		D_R[2] = GR.u_sx;
+		D_R[3] = GR.Px;
+		D_R[4] = GR.Qx;
+		D_R[5] = GR.Hx;
+		D_R[6] = GR.eta_gx;
+		break;
+	case 1:
+		D_L[1] = GL.rho_sy;
+		D_L[2] = GL.u_sy;
+		D_L[3] = GL.Py;
+		D_L[4] = GL.Qy;
+		D_L[5] = GL.Hy;
+		D_L[6] = GL.eta_gy;
+		D_R[1] = GR.rho_sy;
+		D_R[2] = GR.u_sy;
+		D_R[3] = GR.Py;
+		D_R[4] = GR.Qy;
+		D_R[5] = GR.Hy;
+		D_R[6] = GR.eta_gy;
+		break;
+	}
 	double GAMMA_g = gamma_g-1.0;
 	double V = u_g-u_s, T_g = pow(rho_g,GAMMA_g)/GAMMA_g;
 	double R[7][7]={0.0};

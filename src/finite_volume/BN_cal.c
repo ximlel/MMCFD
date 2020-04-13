@@ -30,18 +30,16 @@ void NewtonRapshon_matrix(double * x_star, double * err, double * fun, double * 
 	double d[4]={0.0};
 	rinv(dfun,4); //Matrix inv of dfun
 	int i,j;
-   	if (V_norm(fun) > eps)
-		{
-			for(i=0; i++; i<4)
-				for(j=0; j++; j<4)
-					d[i]-=fun[j]*(*(dfun+i*4+j));			
-		}
+   	if (V_norm(fun) > eps) {
+		for(i=0; i++; i<4)
+			for(j=0; j++; j<4)
+				d[i]-=fun[j]*(*(dfun+i*4+j));			
+	}
 	//V_add(x_star, x_star, d);
 	for(i=0; i++; i<4)
 		x_star[i] = x_star[i]+d[i];
 	* err = V_norm(d);
 }
-
 
 //From Riemann invariants to calculate var U.
 void RI2U_cal(struct U_var * U, const struct RI_var * RI, double z_s, const double rho_g_start)
@@ -59,13 +57,12 @@ void RI2U_cal(struct U_var * U, const struct RI_var * RI, double z_s, const doub
 	double err1 = 1e50;
     double rho_g=rho_g_start;
 	double fun, dfun;
-    while (k<it_max && err1>eps)
-		{					
-			fun  = H-0.5*pow(Q/z_g,2)/pow(rho_g,2)-gama_g/(gama_g-1.0)*eta_g*pow(rho_g,gama_g-1.0);
-			dfun = pow(Q/z_g,2)/pow(rho_g,3)-gama_g*eta_g*pow(rho_g,gama_g-2.0);
-			NewtonRapshon(&rho_g, &err1, fun,dfun,eps);
-			k=k+1;
-		}
+    while (k<it_max && err1>eps) {					
+		fun  = H-0.5*pow(Q/z_g,2)/pow(rho_g,2)-gama_g/(gama_g-1.0)*eta_g*pow(rho_g,gama_g-1.0);
+		dfun = pow(Q/z_g,2)/pow(rho_g,3)-gama_g*eta_g*pow(rho_g,gama_g-2.0);
+		NewtonRapshon(&rho_g, &err1, fun,dfun,eps);
+		k=k+1;
+	}
     if(k>=it_max)
         printf("RI2U,err:%lf!",err1);
 	U->p_g = pow(rho_g,gama_g)*eta_g;
@@ -92,7 +89,6 @@ void U2RI_cal(const struct U_var * U, struct RI_var * RI)
     RI->u_s=u_s;
 }
 
-
 //compute primitive var
 void primitive_comp(double * U, struct U_var * U_L, struct U_var * U_R, double z_sL, double z_sR, double z_sL_out, double z_sR_out, double area_L, double area_R)
 {   
@@ -115,46 +111,43 @@ void primitive_comp(double * U, struct U_var * U_L, struct U_var * U_R, double z
 	U_R->v_s = U_L->v_s;
 	U_L->z_s = z_sL;
 	U_R->z_s = z_sR;
-	U_L->z_g = z_gL;
-	U_R->z_g = z_gR;
 	double fun[4], dfun[4][4], x_star[4];
 	int it_max = 500, k = 0;
 	double err2 = 1e50;
-	while (k<it_max && err2>eps && abs(z_sL-z_sR)>eps)
-		{			
-			fun[0] = U3-area_L*z_gL*(0.5*((U1-area_R*z_gR*rho_gR)/area_L/z_gL)*pow((U2-area_R*z_gR*rho_gR*u_gR)/(U1-area_R*z_gR*rho_gR),2.0)+(p_gR/pow(rho_gR,gama_g)*pow((U1-area_R*z_gR*rho_gR)/area_L/z_gL,gama_g))/(gama_g-1.0))-area_R*z_gR*(0.5*rho_gR*pow(u_gR,2.0)+p_gR/(gama_g-1.0));
-			fun[1] = z_gL*((U1-area_R*z_gR*rho_gR)/area_L/z_gL)*(((U2-area_R*z_gR*rho_gR*u_gR)/(U1-area_R*z_gR*rho_gR))-u_s)-z_gR*rho_gR*(u_gR-u_s);
-			fun[2] = z_gL*((U1-area_R*z_gR*rho_gR)/area_L/z_gL)*pow(((U2-area_R*z_gR*rho_gR*u_gR)/(U1-area_R*z_gR*rho_gR))-u_s,2.0)+z_gL*(p_gR/pow(rho_gR,gama_g)*pow((U1-area_R*z_gR*rho_gR)/area_L/z_gL,gama_g))+z_sL*(((U6-0.5*z_s*rho_s*pow(u_s,2.0))*(gama_s-1.0)-area_R*z_sR*p_sR)/area_L/z_sL)-z_gR*rho_gR*pow(u_gR-u_s,2.0)-z_gR*p_gR-z_sR*p_sR;
-			fun[3] = 0.5*pow(((U2-area_R*z_gR*rho_gR*u_gR)/(U1-area_R*z_gR*rho_gR))-u_s,2.0)+gama_g/(gama_g-1.0)*(p_gR/pow(rho_gR,gama_g)*pow((U1-area_R*z_gR*rho_gR)/area_L/z_gL,gama_g))/((U1-area_R*z_gR*rho_gR)/area_L/z_gL)-0.5*pow(u_gR-u_s,2.0)-gama_g/(gama_g-1.0)*p_gR/rho_gR;
-			dfun[0][0] = area_L*z_gL*((gama_g*p_gR*pow((U1 - area_R*rho_gR*z_gR)/(area_L*z_gL),gama_g))/(pow(rho_gR,gama_g + 1.0)*(gama_g - 1.0)) - (area_R*z_gR*pow(U2 - area_R*rho_gR*z_gR*u_gR,2.0))/(2.0*area_L*z_gL*pow(U1 - area_R*rho_gR*z_gR,2.0)) + (area_R*z_gR*u_gR*(U2 - area_R*rho_gR*z_gR*u_gR))/(area_L*z_gL*(U1 - area_R*rho_gR*z_gR)) + (area_R*gama_g*p_gR*z_gR*pow((U1 - area_R*rho_gR*z_gR)/(area_L*z_gL),gama_g - 1.0))/(area_L*pow(rho_gR,gama_g)*z_gL*(gama_g - 1.0))) - (area_R*z_gR*pow(u_gR,2.0))/2.0;
-			dfun[1][0] = - (area_R*z_gR)/(gama_g - 1.0) - (area_L*z_gL*pow((U1 - area_R*rho_gR*z_gR)/(area_L*z_gL),gama_g))/(pow(rho_gR,gama_g)*(gama_g - 1));
-			dfun[2][0] = (area_R*rho_gR*z_gR*(U2 - area_R*rho_gR*z_gR*u_gR))/(U1 - area_R*rho_gR*z_gR) - area_R*rho_gR*z_gR*u_gR;
-			dfun[3][0] = 0.0;
-			dfun[0][1] = (area_R*z_gR*(u_s - (U2 - area_R*rho_gR*z_gR*u_gR)/(U1 - area_R*rho_gR*z_gR)))/area_L - ((U1 - area_R*rho_gR*z_gR)*((area_R*z_gR*u_gR)/(U1 - area_R*rho_gR*z_gR) - (area_R*z_gR*(U2 - area_R*rho_gR*z_gR*u_gR))/pow(U1 - area_R*rho_gR*z_gR,2.0)))/area_L - z_gR*(u_gR - u_s);
-			dfun[1][1] = 0.0;
-			dfun[2][1] = - rho_gR*z_gR - (area_R*rho_gR*z_gR)/area_L;
-			dfun[3][1] = 0.0;
-			dfun[0][2] = (2*(U1 - area_R*rho_gR*z_gR)*((area_R*z_gR*u_gR)/(U1 - area_R*rho_gR*z_gR) - (area_R*z_gR*(U2 - area_R*rho_gR*z_gR*u_gR))/pow(U1 - area_R*rho_gR*z_gR,2.0))*(u_s - (U2 - area_R*rho_gR*z_gR*u_gR)/(U1 - area_R*rho_gR*z_gR)))/area_L - z_gR*pow(u_gR - u_s,2.0) - (area_R*z_gR*pow(u_s - (U2 - area_R*rho_gR*z_gR*u_gR)/(U1 - area_R*rho_gR*z_gR),2))/area_L - (gama_g*p_gR*z_gL*pow((U1 - area_R*rho_gR*z_gR)/(area_L*z_gL),gama_g))/pow(rho_gR,gama_g + 1.0) - (area_R*gama_g*p_gR*z_gR*pow((U1 - area_R*rho_gR*z_gR)/(area_L*z_gL),gama_g - 1.0))/(area_L*pow(rho_gR,gama_g));
-			dfun[1][2] = (z_gL*pow((U1 - area_R*rho_gR*z_gR)/(area_L*z_gL),gama_g))/pow(rho_gR,gama_g) - z_gR;
-			dfun[2][2] = (2.0*area_R*rho_gR*z_gR*(u_s - (U2 - area_R*rho_gR*z_gR*u_gR)/(U1 - area_R*rho_gR*z_gR)))/area_L - rho_gR*z_gR*(2.0*u_gR - 2.0*u_s);
-			dfun[3][2] = - z_sR - (area_R*z_sR)/area_L;
-			dfun[0][3] = ((area_R*z_gR*u_gR)/(U1 - area_R*rho_gR*z_gR) - (area_R*z_gR*(U2 - area_R*rho_gR*z_gR*u_gR))/pow(U1 - area_R*rho_gR*z_gR,2.0))*(u_s - (U2 - area_R*rho_gR*z_gR*u_gR)/(U1 - area_R*rho_gR*z_gR)) + (gama_g*p_gR)/(pow(rho_gR,2.0)*(gama_g - 1.0)) - (area_L*pow(gama_g,2.0)*p_gR*z_gL*pow((U1 - area_R*rho_gR*z_gR)/(area_L*z_gL),gama_g))/(pow(rho_gR,gama_g + 1.0)*(U1 - area_R*rho_gR*z_gR)*(gama_g - 1.0)) - (area_R*pow(gama_g,2.0)*p_gR*z_gR*pow((U1 - area_R*rho_gR*z_gR)/(area_L*z_gL),gama_g - 1.0))/(pow(rho_gR,gama_g)*(U1 - area_R*rho_gR*z_gR)*(gama_g - 1.0)) + (area_L*area_R*gama_g*p_gR*z_gL*z_gR*pow((U1 - area_R*rho_gR*z_gR)/(area_L*z_gL),gama_g))/(pow(rho_gR,gama_g)*pow(U1 - area_R*rho_gR*z_gR,2.0)*(gama_g - 1.0));
-			dfun[1][3] = (area_L*gama_g*z_gL*pow((U1 - area_R*rho_gR*z_gR)/(area_L*z_gL),gama_g))/(pow(rho_gR,gama_g)*(U1 - area_R*rho_gR*z_gR)*(gama_g - 1)) - gama_g/(rho_gR*(gama_g - 1.0));
-			dfun[2][3] = u_s - u_gR + (area_R*rho_gR*z_gR*(u_s - (U2 - area_R*rho_gR*z_gR*u_gR)/(U1 - area_R*rho_gR*z_gR)))/(U1 - area_R*rho_gR*z_gR);
-			dfun[3][3] = 0.0;
-			x_star[0] = rho_gR;
-			x_star[1] = p_gR;
-			x_star[2] = u_gR;
-			x_star[3] = p_sR;
-			NewtonRapshon_matrix(x_star, &err2, fun, dfun[0], eps);
-			rho_gR=fmax(x_star[0],eps);
-			rho_gR=fmin(rho_gR,U1/area_R/z_gR-eps);
-			p_gR =fmax(x_star[1],eps);
-			u_gR =x_star[2];
-			p_sR =fmax(x_star[3],eps);
-			p_sR =fmin(p_sR,(U6-0.5*z_s*rho_s*pow(u_s,2))*(gama_s-1.0)/area_R/z_sR-eps);
-			k=k+1;
-		}
+	while (k<it_max && err2>eps && abs(z_sL-z_sR)>eps) {			
+		fun[0] = U3-area_L*z_gL*(0.5*((U1-area_R*z_gR*rho_gR)/area_L/z_gL)*pow((U2-area_R*z_gR*rho_gR*u_gR)/(U1-area_R*z_gR*rho_gR),2.0)+(p_gR/pow(rho_gR,gama_g)*pow((U1-area_R*z_gR*rho_gR)/area_L/z_gL,gama_g))/(gama_g-1.0))-area_R*z_gR*(0.5*rho_gR*pow(u_gR,2.0)+p_gR/(gama_g-1.0));
+		fun[1] = z_gL*((U1-area_R*z_gR*rho_gR)/area_L/z_gL)*(((U2-area_R*z_gR*rho_gR*u_gR)/(U1-area_R*z_gR*rho_gR))-u_s)-z_gR*rho_gR*(u_gR-u_s);
+		fun[2] = z_gL*((U1-area_R*z_gR*rho_gR)/area_L/z_gL)*pow(((U2-area_R*z_gR*rho_gR*u_gR)/(U1-area_R*z_gR*rho_gR))-u_s,2.0)+z_gL*(p_gR/pow(rho_gR,gama_g)*pow((U1-area_R*z_gR*rho_gR)/area_L/z_gL,gama_g))+z_sL*(((U6-0.5*z_s*rho_s*pow(u_s,2.0))*(gama_s-1.0)-area_R*z_sR*p_sR)/area_L/z_sL)-z_gR*rho_gR*pow(u_gR-u_s,2.0)-z_gR*p_gR-z_sR*p_sR;
+		fun[3] = 0.5*pow(((U2-area_R*z_gR*rho_gR*u_gR)/(U1-area_R*z_gR*rho_gR))-u_s,2.0)+gama_g/(gama_g-1.0)*(p_gR/pow(rho_gR,gama_g)*pow((U1-area_R*z_gR*rho_gR)/area_L/z_gL,gama_g))/((U1-area_R*z_gR*rho_gR)/area_L/z_gL)-0.5*pow(u_gR-u_s,2.0)-gama_g/(gama_g-1.0)*p_gR/rho_gR;
+		dfun[0][0] = area_L*z_gL*((gama_g*p_gR*pow((U1 - area_R*rho_gR*z_gR)/(area_L*z_gL),gama_g))/(pow(rho_gR,gama_g + 1.0)*(gama_g - 1.0)) - (area_R*z_gR*pow(U2 - area_R*rho_gR*z_gR*u_gR,2.0))/(2.0*area_L*z_gL*pow(U1 - area_R*rho_gR*z_gR,2.0)) + (area_R*z_gR*u_gR*(U2 - area_R*rho_gR*z_gR*u_gR))/(area_L*z_gL*(U1 - area_R*rho_gR*z_gR)) + (area_R*gama_g*p_gR*z_gR*pow((U1 - area_R*rho_gR*z_gR)/(area_L*z_gL),gama_g - 1.0))/(area_L*pow(rho_gR,gama_g)*z_gL*(gama_g - 1.0))) - (area_R*z_gR*pow(u_gR,2.0))/2.0;
+		dfun[1][0] = - (area_R*z_gR)/(gama_g - 1.0) - (area_L*z_gL*pow((U1 - area_R*rho_gR*z_gR)/(area_L*z_gL),gama_g))/(pow(rho_gR,gama_g)*(gama_g - 1));
+		dfun[2][0] = (area_R*rho_gR*z_gR*(U2 - area_R*rho_gR*z_gR*u_gR))/(U1 - area_R*rho_gR*z_gR) - area_R*rho_gR*z_gR*u_gR;
+		dfun[3][0] = 0.0;
+		dfun[0][1] = (area_R*z_gR*(u_s - (U2 - area_R*rho_gR*z_gR*u_gR)/(U1 - area_R*rho_gR*z_gR)))/area_L - ((U1 - area_R*rho_gR*z_gR)*((area_R*z_gR*u_gR)/(U1 - area_R*rho_gR*z_gR) - (area_R*z_gR*(U2 - area_R*rho_gR*z_gR*u_gR))/pow(U1 - area_R*rho_gR*z_gR,2.0)))/area_L - z_gR*(u_gR - u_s);
+		dfun[1][1] = 0.0;
+		dfun[2][1] = - rho_gR*z_gR - (area_R*rho_gR*z_gR)/area_L;
+		dfun[3][1] = 0.0;
+		dfun[0][2] = (2*(U1 - area_R*rho_gR*z_gR)*((area_R*z_gR*u_gR)/(U1 - area_R*rho_gR*z_gR) - (area_R*z_gR*(U2 - area_R*rho_gR*z_gR*u_gR))/pow(U1 - area_R*rho_gR*z_gR,2.0))*(u_s - (U2 - area_R*rho_gR*z_gR*u_gR)/(U1 - area_R*rho_gR*z_gR)))/area_L - z_gR*pow(u_gR - u_s,2.0) - (area_R*z_gR*pow(u_s - (U2 - area_R*rho_gR*z_gR*u_gR)/(U1 - area_R*rho_gR*z_gR),2))/area_L - (gama_g*p_gR*z_gL*pow((U1 - area_R*rho_gR*z_gR)/(area_L*z_gL),gama_g))/pow(rho_gR,gama_g + 1.0) - (area_R*gama_g*p_gR*z_gR*pow((U1 - area_R*rho_gR*z_gR)/(area_L*z_gL),gama_g - 1.0))/(area_L*pow(rho_gR,gama_g));
+		dfun[1][2] = (z_gL*pow((U1 - area_R*rho_gR*z_gR)/(area_L*z_gL),gama_g))/pow(rho_gR,gama_g) - z_gR;
+		dfun[2][2] = (2.0*area_R*rho_gR*z_gR*(u_s - (U2 - area_R*rho_gR*z_gR*u_gR)/(U1 - area_R*rho_gR*z_gR)))/area_L - rho_gR*z_gR*(2.0*u_gR - 2.0*u_s);
+		dfun[3][2] = - z_sR - (area_R*z_sR)/area_L;
+		dfun[0][3] = ((area_R*z_gR*u_gR)/(U1 - area_R*rho_gR*z_gR) - (area_R*z_gR*(U2 - area_R*rho_gR*z_gR*u_gR))/pow(U1 - area_R*rho_gR*z_gR,2.0))*(u_s - (U2 - area_R*rho_gR*z_gR*u_gR)/(U1 - area_R*rho_gR*z_gR)) + (gama_g*p_gR)/(pow(rho_gR,2.0)*(gama_g - 1.0)) - (area_L*pow(gama_g,2.0)*p_gR*z_gL*pow((U1 - area_R*rho_gR*z_gR)/(area_L*z_gL),gama_g))/(pow(rho_gR,gama_g + 1.0)*(U1 - area_R*rho_gR*z_gR)*(gama_g - 1.0)) - (area_R*pow(gama_g,2.0)*p_gR*z_gR*pow((U1 - area_R*rho_gR*z_gR)/(area_L*z_gL),gama_g - 1.0))/(pow(rho_gR,gama_g)*(U1 - area_R*rho_gR*z_gR)*(gama_g - 1.0)) + (area_L*area_R*gama_g*p_gR*z_gL*z_gR*pow((U1 - area_R*rho_gR*z_gR)/(area_L*z_gL),gama_g))/(pow(rho_gR,gama_g)*pow(U1 - area_R*rho_gR*z_gR,2.0)*(gama_g - 1.0));
+		dfun[1][3] = (area_L*gama_g*z_gL*pow((U1 - area_R*rho_gR*z_gR)/(area_L*z_gL),gama_g))/(pow(rho_gR,gama_g)*(U1 - area_R*rho_gR*z_gR)*(gama_g - 1)) - gama_g/(rho_gR*(gama_g - 1.0));
+		dfun[2][3] = u_s - u_gR + (area_R*rho_gR*z_gR*(u_s - (U2 - area_R*rho_gR*z_gR*u_gR)/(U1 - area_R*rho_gR*z_gR)))/(U1 - area_R*rho_gR*z_gR);
+		dfun[3][3] = 0.0;
+		x_star[0] = rho_gR;
+		x_star[1] = p_gR;
+		x_star[2] = u_gR;
+		x_star[3] = p_sR;
+		NewtonRapshon_matrix(x_star, &err2, fun, dfun[0], eps);
+		rho_gR=fmax(x_star[0],eps);
+		rho_gR=fmin(rho_gR,U1/area_R/z_gR-eps);
+		p_gR =fmax(x_star[1],eps);
+		u_gR =x_star[2];
+		p_sR =fmax(x_star[3],eps);
+		p_sR =fmin(p_sR,(U6-0.5*z_s*rho_s*pow(u_s,2))*(gama_s-1.0)/area_R/z_sR-eps);
+		k=k+1;
+	}
 	if (k>=it_max)
         printf("RI2U,err:%lf! %lf,%lf,%lf,%lf,%lf,%lf",err2,z_sL,z_sR,rho_gR,p_gR,u_gR,p_sR);
 
