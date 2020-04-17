@@ -241,3 +241,59 @@ void G_LR_RI2U(struct GRP_LR_var *G, double z_s, int x_or_y)
 		G->v_sy =0.0;
 	*/
 }
+
+void boundary_cond_x(struct center_var C, int cond) {
+	const int n_y = (int)config[14]+2, n_x = (int)config[13]+2;
+	int i,k;
+	double **p;
+	for(i = 0; i < n_y; ++i) {
+		C.Z_sC[i][n_x-2] = C.Z_sC[i][n_x-3];
+		C.Z_sC[i][n_x-1] = C.Z_sC[i][n_x-2];
+		C.Z_sC[i][0]     = C.Z_sC[i][1];
+		for(k=0, p=C.RHO_gC; k<sizeof(struct center_var)/sizeof(double **)-1; k++) {
+			p[i][n_x-1] = p[i][n_x-2];
+			p[i][0]     = p[i][1];
+			p++;
+		}
+		if (cond == 1) { // wall condition
+			C.RHO_U_gC[i][n_x-1] = -C.RHO_U_gC[i][n_x-2];
+			C.RHO_U_sC[i][n_x-1] = -C.RHO_U_sC[i][n_x-2];			
+			C.RHO_U_gC[i][0]     = -C.RHO_U_gC[i][1];
+			C.RHO_U_sC[i][0]     = -C.RHO_U_sC[i][1];
+			C.U_gC[i][n_x-1]     = -C.U_gC[i][n_x-2];
+			C.U_sC[i][n_x-1]     = -C.U_sC[i][n_x-2];			
+			C.U_gC[i][0]         = -C.U_gC[i][1];
+			C.U_sC[i][0]         = -C.U_sC[i][1];
+			C.Q_xd[i][n_x-1]     = -C.Q_xd[i][n_x-2];
+			C.Q_xd[i][0]         = -C.Q_xd[i][1];
+		}
+	}
+}
+
+void boundary_cond_y(struct center_var C, int cond) {
+	const int n_y = (int)config[14]+2, n_x = (int)config[13]+2;
+	int j,k;
+	double **p;
+	for(j = 0; j < n_x; ++j) {
+		C.Z_sC[n_y-2][j] = C.Z_sC[n_y-3][j];		
+		C.Z_sC[n_y-1][j] = C.Z_sC[n_y-2][j];		
+		C.Z_sC[0][j]     = C.Z_sC[1][j];		
+		for(k=0, p=C.RHO_gC; k<sizeof(struct center_var)/sizeof(double **)-1; k++) {
+			p[n_y-1][j] = p[n_y-2][j];
+			p[0][j]     = p[1][j];
+			p++;
+		}
+		if (cond == 1) { // wall condition
+				C.RHO_V_gC[n_y-1][j] = -C.RHO_V_gC[n_y-2][j];
+				C.RHO_V_sC[n_y-1][j] = -C.RHO_V_sC[n_y-2][j];
+				C.RHO_V_gC[0][j]     = -C.RHO_V_gC[1][j];
+				C.RHO_V_sC[0][j]     = -C.RHO_V_sC[1][j];
+				C.V_gC[n_y-1][j]     = -C.V_gC[n_y-2][j];
+				C.V_sC[n_y-1][j]     = -C.V_sC[n_y-2][j];
+				C.V_gC[0][j]         = -C.V_gC[1][j];
+				C.V_sC[0][j]         = -C.V_sC[1][j];
+				C.Q_yd[0][j]         = -C.Q_yd[1][j];
+				C.Q_yd[0][j]         = -C.Q_yd[1][j];
+			}
+	}
+}

@@ -57,3 +57,5 @@ void BN_RI2Cy(struct RI_var RI, struct center_var C, int i, int j);
 void GRP_var_init(struct GRP_LR_var *G, struct slope_var SV, struct U_var U, double d, int i, int j, int pm_xy);
 void GRP_RI_var_init(struct GRP_LR_var *G, struct slope_var SV, struct center_var C, double d, int i, int j, int pm_xy);
 void G_LR_RI2U(struct GRP_LR_var *G, double z_s, int x_or_y);
+void boundary_cond_x(struct center_var C, int cond);
+void boundary_cond_y(struct center_var C, int cond);
