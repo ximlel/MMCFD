@@ -153,6 +153,4 @@ void flux_add_ifv2cv(const struct i_f_var * ifv, const struct cell_var * cv, con
 			cv->Z_a_p[k][j] = 0.5*(cv->Z_a_p[k][j] + ifv->Z_a);
 		}
 	cv->gamma_p[k][j] = 0.5*(cv->gamma_p[k][j] + ifv->gamma);
-
-
 }

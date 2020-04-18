@@ -1,4 +1,4 @@
-#ifndef VARSTRUC_H
+    #ifndef VARSTRUC_H
 #define VARSTRUC_H
 
 
@@ -92,9 +92,9 @@ struct center_var {
 	//gaseous cell
 	double **RHO_gC, **P_gC, **U_gC, **V_gC;
 	double **RHO_sC, **P_sC, **U_sC, **V_sC;
-	double ** ZRHO_gC, ** ZRHO_sC;
 	double **RHO_U_gC, **RHO_V_gC, **E_gC;
 	double **RHO_U_sC, **RHO_V_sC, **E_sC;
+	double **ZRHO_gC,  **ZRHO_sC;
 	//gaseous cell in x/y direction
 	double **Z_sS_xd, **Z_sS_yd; //S-staggered, d-direction
 	double **Q_xd, **P_xd, **H_xd, **eta_g_xd;
@@ -110,6 +110,7 @@ struct slope_var {
 	double **Z_sS_x, **Z_sS_y;
 	double **Q_x, **P_x, **H_x, **eta_g_x;
 	double **Q_y, **P_y, **H_y, **eta_g_y;
+    double **idx; // idx=1.0 说明这里是孔隙率间断
 };
 //interfacial variables at t_{n+1} in GRP used to calculate slopes
 struct face_var {
