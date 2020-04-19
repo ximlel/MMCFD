@@ -233,11 +233,13 @@ struct flu_var flu_conf_load(const char *example)
 			STR_FLU_INI(PHI);
 			STR_FLU_INI(Z_a);
 		}
+    /*
 	if (r == 0)
 		{
 			printf("Initial date of fluid field failed to read!\n");
 			exit(1);
 		}
+    */		
 	STR_FLU_INI(RHO_b);
 	STR_FLU_INI(U_b);
 	STR_FLU_INI(V_b);

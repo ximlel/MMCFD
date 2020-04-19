@@ -5,7 +5,7 @@
 #include "../include/var_struc.h"
 #include "../include/Riemann_solver.h"
 
-void linear_GRP_RI_solver_BN
+int linear_GRP_RI_solver_BN
 (struct RI_var *RI, const double D_z_s, const double z_s, const double *mid_g, const double *mid_s, 
  const struct GRP_LR_var GL, const struct GRP_LR_var GR,
  const double gamma_s, const double gamma_g, const double eps, const double tau, const int x_or_y)
@@ -93,7 +93,10 @@ void linear_GRP_RI_solver_BN
     double BL[7][7], BR[7][7], W_tL[7], W_tR[7], D[7];
     mat_mul(R[0],Lambda_v_p[0],BL[0],7,7,7);
     mat_mul(R[0],Lambda_v_m[0],BR[0],7,7,7);
-    rinv(R[0],7);
+    if (rinv(R[0],7)==0)
+    {
+        return 1;
+    }
     mat_mul(BL[0],R[0],BL[0],7,7,7);
     mat_mul(BR[0],R[0],BR[0],7,7,7);
     mat_mul(BL[0],D_L,W_tL,7,1,7);
@@ -113,4 +116,6 @@ void linear_GRP_RI_solver_BN
     RI->H     = RI->H + 0.5*tau*D[5];
     RI->eta_g = p_g/pow(rho_g,gamma_g);
     RI->eta_g = RI->eta_g + 0.5*tau*D[6];
+    
+    return 0;
 }

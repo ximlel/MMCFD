@@ -55,7 +55,7 @@ int Roe_GRP_solver_BN_1D
  const double   p_l_L, const double   p_l_R, const double   d_p_l_L, const double   d_p_l_R, const double   t_p_l_L, const double   t_p_l_R,
  const double gamma_g, const double gamma_l, const double  eps);
 
-void linear_GRP_RI_solver_BN
+int linear_GRP_RI_solver_BN
 (struct RI_var *RI, const double D_z_s, const double z_s, const double *mid_g, const double *mid_s, 
  const struct GRP_LR_var GL, const struct GRP_LR_var GR,
  const double gamma_s, const double gamma_g, const double eps, const double tau, const int x_or_y);

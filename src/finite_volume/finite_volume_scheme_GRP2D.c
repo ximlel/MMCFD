@@ -96,10 +96,10 @@ static void slope_simiter3_GRP(struct face_var FV, struct center_var CV, struct 
 		    for (l = -HN; l <= HN; l++) {
 		    if (i+k >= 0 && i+k < n_y && j+l >=0 && j+l < n_x)
 		    for(k=0, p=SV.Z_sx; k<sizeof(struct slope_var)/sizeof(double **); k++)
-		    (p++)[i+k][j+l] = 0.0;  */
+		    (p++)[i+k][j+l] = 0.0;
+            }  */
 		SV.idx[i][j] = 1.0;
-	}
-}
+    }
 }
 
 void finite_volume_scheme_GRP2D(struct flu_var * FV, const struct mesh_var * mv, const char * scheme, const char * problem) //R-K
@@ -126,33 +126,38 @@ void finite_volume_scheme_GRP2D(struct flu_var * FV, const struct mesh_var * mv,
     double plot_t = 0.0;
     int i, j, k, l, stop_step = 0, stop_t = 0;
 
-    double **p;
+    double **p, ***q;
     struct center_var C;
     struct slope_var SV;
     struct face_var F;
     struct flux_var FX;
-    for(k=0, p=SV.Z_sx; k<sizeof(struct slope_var)/sizeof(double **); k++,p++) {
+    
+    for(k=0, q=&SV.Z_sx; k<sizeof(struct slope_var)/sizeof(double **); k++,q++) {
 	p = (double**)calloc(n_y,sizeof(double*));
 	for(i=0; i<n_y; i++)
 	    p[i]=(double*)calloc(n_x,sizeof(double));
+	*q = p;
     }
-    for(k=0, p=C.Z_sC; k<sizeof(struct center_var)/sizeof(double **); k++,p++) {
+    for(k=0, q=&C.Z_sC; k<sizeof(struct center_var)/sizeof(double **); k++,q++) {
 	p = (double**)calloc(n_y,sizeof(double*));
 	for(i=0; i<n_y; i++)
 	    p[i]=(double*)calloc(n_x,sizeof(double));
+	*q = p;
     }
-    for(k=0, p=F.Z_I_sxL; k<sizeof(struct face_var)/sizeof(double **); k++,p++) {
+    for(k=0, q=&F.Z_I_sxL; k<sizeof(struct face_var)/sizeof(double **); k++,q++) {
 	p = (double**)calloc(n_y+1,sizeof(double*));
 	for(i=0; i<n_y+1; i++)
 	    p[i]=(double*)calloc(n_x+1,sizeof(double));
+	*q = p;
     }
-    for(k=0, p=FX.ZRHO_F_gx; k<sizeof(struct flux_var)/sizeof(double **); k++,p++) {
+    for(k=0, q=&FX.ZRHO_F_gx; k<sizeof(struct flux_var)/sizeof(double **); k++,q++) {
 	p = (double**)calloc(n_y+1,sizeof(double*));
 	for(i=0; i<n_y+1; i++)
 	    p[i]=(double*)calloc(n_x+1,sizeof(double));
+	*q = p;
     }
     FV_2_C_init(C, *FV);
-	
+
     int iL,iR,jL,jR, i_1,j_1, ip1,jp1, ij0;
     double z_gmid, rho_gmid, p_gmid, u_gmid, v_gmid;
     double z_smid, rho_smid, p_smid, u_smid, v_smid;
@@ -184,7 +189,8 @@ void finite_volume_scheme_GRP2D(struct flu_var * FV, const struct mesh_var * mv,
 	}
 	if (stop_step == 0) {
 	    boundary_cond_x(C,0);
-	    for(i = 0; i < n_y; ++i)
+	    boundary_cond_y(C,0);
+        for(i = 0; i < n_y; ++i)
 		for(j = 0; j < n_x; ++j) {
 		    i_1 = i>0?i-1:0;
 		    j_1 = j>0?j-1:0;
@@ -197,7 +203,8 @@ void finite_volume_scheme_GRP2D(struct flu_var * FV, const struct mesh_var * mv,
 		}
 	}
 	else if (stop_step == 2) {
-	    boundary_cond_y(C,1);
+	    boundary_cond_y(C,0);
+	    boundary_cond_x(C,0);
 	    for(j = 0; j < n_x; ++j)
 		for(i = 0; i < n_y; ++i) {
 		    i_1 = i>0?i-1:0;
@@ -238,7 +245,7 @@ void finite_volume_scheme_GRP2D(struct flu_var * FV, const struct mesh_var * mv,
 
 	if (stop_step == 0) {
 	    for(i = 1; i <  n_y-1; ++i)
-		for(j = 1; j < n_x-1; ++j) {
+		for(j = 1; j <= n_x-1; ++j) {
 		    jL = j-1; jR = j;
 		    z_smid = U_R[i][jL].z_s;
 		    z_gmid = 1.0-z_smid;
@@ -284,7 +291,7 @@ void finite_volume_scheme_GRP2D(struct flu_var * FV, const struct mesh_var * mv,
 		    FX.Z_s_MIDx[i][j] = z_smid;
 		}
 	    for(i = 1; i < n_y-1; ++i)
-		for(j = 1; j < n_x-1; ++j) {
+		for(j = 1; j <= n_x-1; ++j) {
 		    jL = j-1; jR = j;
 		    z_sxL = SV.Z_sx[i][jL];
 		    z_sxR = SV.Z_sx[i][jR];
@@ -320,10 +327,10 @@ void finite_volume_scheme_GRP2D(struct flu_var * FV, const struct mesh_var * mv,
 	    for(i = 1; i < n_y-1; ++i)
 		for(j = 1; j < n_x-1; ++j) {
 		    j_1=j>1?j-1:1;
-		    if(fabs(U_R[i][j].z_s-U_L[i][j].z_s)<eps)
+		    if(fabs(FX.Z_s_MIDx[i][j+1]-FX.Z_s_MIDx[i][j])<eps)
 			S = C.P_gC[i][j]*(U_R[i][j].z_s-U_L[i][j].z_s);
 		    else
-			S = U_R[i][j].z_s*FX.P_s_MIDx[i][j+1]-U_L[i][j].z_s*FX.P_s_MIDx[i][j];
+			S = FX.Z_s_MIDx[i][j+1]*FX.P_s_MIDx[i][j+1]-FX.Z_s_MIDx[i][j]*FX.P_s_MIDx[i][j];
 		    C.ZRHO_gC[i][j] -= tau*(FX.ZRHO_F_gx[i][j+1]-FX.ZRHO_F_gx[i][j])/dx;
 		    C.RHO_U_gC[i][j]-= tau*(FX.U_F_gx[i][j+1]  -FX.U_F_gx[i][j])  /dx-tau/dx*S;
 		    C.RHO_V_gC[i][j]-= tau*(FX.V_F_gx[i][j+1]  -FX.V_F_gx[i][j])  /dx;
@@ -340,8 +347,8 @@ void finite_volume_scheme_GRP2D(struct flu_var * FV, const struct mesh_var * mv,
 		}
 	}
 	else if (stop_step == 2) {
-	    for(j = 1; j <  n_x; ++j)
-		for(i = 1; i < n_y; ++i) {
+	    for(j = 1; j <  n_x-1; ++j)
+		for(i = 1; i <= n_y-1; ++i) {
 		    iL = i-1; iR = i;
 		    z_smid = U_R[iL][j].z_s;
 		    z_gmid = 1.0-z_smid;
@@ -387,7 +394,7 @@ void finite_volume_scheme_GRP2D(struct flu_var * FV, const struct mesh_var * mv,
 		    FX.Z_s_MIDy[i][j] = z_smid;
 		}
 	    for(j = 1; j < n_x-1; ++j)
-		for(i = 1; i < n_y-1; ++i) {
+		for(i = 1; i <= n_y-1; ++i) {
 		    iL = i-1; iR = i;
 		    z_sxL = SV.Z_sx[iL][j];
 		    z_sxR = SV.Z_sx[iR][j];
@@ -423,10 +430,10 @@ void finite_volume_scheme_GRP2D(struct flu_var * FV, const struct mesh_var * mv,
 	    for(j = 1; j < n_x-1; ++j)
 		for(i = 1; i < n_y-1; ++i) {
 		    i_1=i>1?i-1:1;
-		    if(fabs(U_R[i][j].z_s-U_L[i][j].z_s)<eps)
+		    if(fabs(FX.Z_s_MIDy[i+1][j]-FX.Z_s_MIDy[i][j])<eps)
 			S = C.P_gC[i][j]*(U_R[i][j].z_s-U_L[i][j].z_s);
 		    else
-			S = U_R[i][j].z_s*FX.P_s_MIDy[i+1][j]-U_L[i][j].z_s*FX.P_s_MIDy[i][j];
+			S = FX.Z_s_MIDy[i+1][j]*FX.P_s_MIDy[i+1][j]-FX.Z_s_MIDy[i][j]*FX.P_s_MIDy[i][j];
 		    C.ZRHO_gC[i][j] -= tau*(FX.ZRHO_F_gy[i+1][j]-FX.ZRHO_F_gy[i][j])/dy;
 		    C.RHO_U_gC[i][j]-= tau*(FX.U_F_gy[i+1][j]  -FX.U_F_gy[i][j])  /dy;
 		    C.RHO_V_gC[i][j]-= tau*(FX.V_F_gy[i+1][j]  -FX.V_F_gy[i][j])  /dy-tau/dx*S;

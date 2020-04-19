@@ -247,12 +247,12 @@ void boundary_cond_x(struct center_var C, int cond)
 {
     const int n_y = (int)config[14]+2, n_x = (int)config[13]+2;
     int i,k;
-    double **p;
+    double ***p;
     for(i = 0; i < n_y; ++i) {
 	C.Z_sC[i][n_x-2]  = C.Z_sC[i][n_x-3];
-	for(k=0, p=C.Z_sC; k<sizeof(struct center_var)/sizeof(double **); k++, p++) {
-	    p[i][n_x-1] = p[i][n_x-2];
-	    p[i][0]     = p[i][1];
+	for(k=0, p=&C.Z_sC; k<sizeof(struct center_var)/sizeof(double **); k++, p++) {
+	    (*p)[i][n_x-1] = (*p)[i][n_x-2];
+	    (*p)[i][0]     = (*p)[i][1];
 	}
 	if (cond == 1) { // wall condition
 	    C.RHO_U_gC[i][n_x-1] = -C.RHO_U_gC[i][n_x-2];
@@ -274,12 +274,12 @@ void boundary_cond_y(struct center_var C, int cond)
 {
     const int n_y = (int)config[14]+2, n_x = (int)config[13]+2;
     int j,k;
-    double **p;
+    double ***p;
     for(j = 0; j < n_x; ++j) {
 	C.Z_sC[n_y-2][j]  = C.Z_sC[n_y-3][j];		
-	for(k=0, p=C.Z_sC; k<sizeof(struct center_var)/sizeof(double **); k++, p++) {
-	    p[n_y-1][j] = p[n_y-2][j];
-	    p[0][j]     = p[1][j];
+	for(k=0, p=&C.Z_sC; k<sizeof(struct center_var)/sizeof(double **); k++, p++) {
+	    (*p)[n_y-1][j] = (*p)[n_y-2][j];
+	    (*p)[0][j]     = (*p)[1][j];
 	}
 	if (cond == 1) { // wall condition
 	    C.RHO_V_gC[n_y-1][j] = -C.RHO_V_gC[n_y-2][j];
@@ -300,21 +300,21 @@ void boundary_cond_slope(struct slope_var SV)
 {
     const int n_y = (int)config[14]+2, n_x = (int)config[13]+2;
     int i,j,k;
-    double **p;
+    double ***p;
     for(i = 0; i < n_y; ++i) {
 	SV.Z_sx[i][n_x-2] = SV.Z_sx[i][n_x-3];
 	SV.Z_sy[i][n_x-2] = SV.Z_sy[i][n_x-3];
-	for(k=0, p=SV.Z_sx; k<sizeof(struct slope_var)/sizeof(double **); k++, p++) {
-	    p[i][n_x-1] = p[i][n_x-2];
-	    p[i][0]     = p[i][1];
+	for(k=0, p=&SV.Z_sx; k<sizeof(struct slope_var)/sizeof(double **); k++, p++) {
+	    (*p)[i][n_x-1] = (*p)[i][n_x-2];
+	    (*p)[i][0]     = (*p)[i][1];
 	}
     }
     for(j = 0; j < n_x; ++j) {
 	SV.Z_sx[n_y-2][j] = SV.Z_sx[n_y-3][j];		
 	SV.Z_sy[n_y-2][j] = SV.Z_sy[n_y-3][j];		
-	for(k=0, p=SV.Z_sx; k<sizeof(struct slope_var)/sizeof(double **); k++, p++) {
-	    p[n_y-1][j] = p[n_y-2][j];
-	    p[0][j]     = p[1][j];
+	for(k=0, p=&SV.Z_sx; k<sizeof(struct slope_var)/sizeof(double **); k++, p++) {
+	    (*p)[n_y-1][j] = (*p)[n_y-2][j];
+	    (*p)[0][j]     = (*p)[1][j];
 	}
     }
 }
