@@ -1,5 +1,6 @@
 #include <math.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "../include/tools.h"
 #include "../include/var_struc.h"
@@ -95,6 +96,7 @@ int linear_GRP_RI_solver_BN
     mat_mul(R[0],Lambda_v_m[0],BR[0],7,7,7);
     if (rinv(R[0],7)==0)
     {
+        exit(0);
         return 1;
     }
     mat_mul(BL[0],R[0],BL[0],7,7,7);

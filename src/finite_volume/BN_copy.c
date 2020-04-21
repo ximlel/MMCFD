@@ -263,8 +263,8 @@ void boundary_cond_x(struct center_var C, int cond)
 	    C.U_sC[i][n_x-1]     = -C.U_sC[i][n_x-2];			
 	    C.U_gC[i][0]         = -C.U_gC[i][1];
 	    C.U_sC[i][0]         = -C.U_sC[i][1];
-	    C.Q_xd[i][n_x-1]     = -C.Q_xd[i][n_x-2];
-	    C.Q_xd[i][0]         = -C.Q_xd[i][1];
+	   // C.Q_xd[i][n_x-1]     = -C.Q_xd[i][n_x-2];
+	   // C.Q_xd[i][0]         = -C.Q_xd[i][1];
 	}
     }
 }
@@ -290,8 +290,8 @@ void boundary_cond_y(struct center_var C, int cond)
 	    C.V_sC[n_y-1][j]     = -C.V_sC[n_y-2][j];
 	    C.V_gC[0][j]         = -C.V_gC[1][j];
 	    C.V_sC[0][j]         = -C.V_sC[1][j];
-	    C.Q_yd[0][j]         = -C.Q_yd[1][j];
-	    C.Q_yd[0][j]         = -C.Q_yd[1][j];
+	   // C.Q_yd[n_y-1][j]     = -C.Q_yd[n_y-2][j];
+	   // C.Q_yd[0][j]         = -C.Q_yd[1][j];
 	}
     }
 }
