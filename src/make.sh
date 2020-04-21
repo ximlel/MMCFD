@@ -45,20 +45,18 @@ read
 #./hydrocode.out RP2D_shear_Quad	RP2D_shear_Quad/RP2D_shear_Quad	2 2_GRP			RMI_S
 #./hydrocode.out RP2D_shear_Quad	RP2D_shear_Quad/RP2D_shear_Quad_G2D	2 2_GRP_2D		RMI_S
 
-#./hydrocode.out RP2D_BN-1 RP2D_BN-1/RP2D_BN-1_g 2 1_g free
-#./hydrocode.out RP2D_BN-1 RP2D_BN-1/RP2D_BN-1_s 2 1_s free
-#./hydrocode.out RP2D_BN0 RP2D_BN0/RP2D_BN0_g 2 1_g free
-#./hydrocode.out RP2D_BN0 RP2D_BN0/RP2D_BN0_s 2 1_s free
 #  ./hydrocode.out RP2D_BN1 RP2D_BN1/RP2D_BN1_g 2 1_g free
 #  ./hydrocode.out RP2D_BN1 RP2D_BN1/RP2D_BN1_s 2 1_s free
 #  ./hydrocode.out RP2D_BN2 RP2D_BN2/RP2D_BN2_g 2 1_g free
 #  ./hydrocode.out RP2D_BN2 RP2D_BN2/RP2D_BN2_s 2 1_s free
-
- ./hydrocode.out RP2D_BN1 RP2D_BN1/RP2D_BN1_g 2 2_g free
- ./hydrocode.out RP2D_BN1 RP2D_BN1/RP2D_BN1_s 2 2_s free
- ./hydrocode.out RP2D_BN2 RP2D_BN2/RP2D_BN2_g 2 2_g free
- ./hydrocode.out RP2D_BN2 RP2D_BN2/RP2D_BN2_s 2 2_s free
+#  ./hydrocode.out RP2D_BN1 RP2D_BN1/RP2D_BN1_g 2 2_g free
+#  ./hydrocode.out RP2D_BN1 RP2D_BN1/RP2D_BN1_s 2 2_s free
+#  ./hydrocode.out RP2D_BN2 RP2D_BN2/RP2D_BN2_g 2 2_g free
+#  ./hydrocode.out RP2D_BN2 RP2D_BN2/RP2D_BN2_s 2 2_s free
  
+./hydrocode.out Solid_Colume Solid_Colume/Solid_Colume_g 2 1_g free
+./hydrocode.out Solid_Colume Solid_Colume/Solid_Colume_s 2 1_s free
+
 #./hydrocode.out RMI/RMI_81	RMI/RMI_81	2 1_Riemann_exact RMI
 #./hydrocode.out RMI/RMI_81	RMI/RMI_81	2 2_GRP		  RMI
 #./hydrocode.out RMI/RMI_321	RMI/RMI_321	2 1_Riemann_exact RMI
