@@ -12,7 +12,7 @@ void BN_C2U(struct center_var C, double *U, int i, int j, int x_or_y)
 {	
     U[0] = C.ZRHO_gC[i][j];
     U[4] = C.ZRHO_sC[i][j];
-    switch(x_or_y) {		   		
+    switch(x_or_y) {
     case 0: //x direction
 	U[1] = C.RHO_U_gC[i][j];
 	U[2] = C.RHO_V_gC[i][j];

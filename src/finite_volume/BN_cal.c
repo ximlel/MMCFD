@@ -64,7 +64,7 @@ void RI2U_cal(struct U_var * U, const struct RI_var * RI, double z_s, const doub
 	k=k+1;
     }
     if(k>=it_max)
-        printf("\nRI2P_err:%lf! %lf, %lf, %lf, %lf, %lf, %lf, %lf, %lf",err1, z_s,rho_s,u_s,Q,P,H,eta_g,rho_g);
+        printf("\nRI2P_err:%lf! %lf, %lf, %lf, %lf, %lf, %lf, %lf, %lf\n",err1, z_s,rho_s,u_s,Q,P,H,eta_g,rho_g);
     U->p_g = pow(rho_g,gama_g)*eta_g;
     U->u_g = Q/z_g/rho_g+u_s;
     U->p_s = (P-Q*(U->u_g-u_s)-z_g*U->p_g)/z_s;
@@ -149,7 +149,7 @@ void primitive_comp(double * U, struct U_var * U_L, struct U_var * U_R, double z
 	k=k+1;
     }
     if (k>=it_max)
-        printf("\nRIeq_err:%lf! %lf, %lf, %lf, %lf, %lf, %lf",err2,z_sL,z_sR,rho_gR,p_gR,u_gR,p_sR);
+        printf("\nRIeq_err:%lf! %lf, %lf, %lf, %lf, %lf, %lf\n",err2,z_sL,z_sR,rho_gR,p_gR,u_gR,p_sR);
 
     U_L->rho_g = (U1-area_R*z_gR*rho_gR)/area_L/z_gL;
     U_R->rho_g = rho_gR;
