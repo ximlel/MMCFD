@@ -123,7 +123,6 @@ void finite_volume_scheme_GRP2D(struct flu_var * FV, const struct mesh_var * mv,
     const int n_y = (int)config[14]+2, n_x = (int)config[13]+2;
     const int n_y0= (int)config[14],   n_x0= (int)config[13];
     const double dx= config[10], dy= config[11];
-    const double NS = 0.0;
     struct cell_var cv = cell_mem_init(mv, FV);
 
     vol_comp(&cv, mv);
@@ -132,7 +131,6 @@ void finite_volume_scheme_GRP2D(struct flu_var * FV, const struct mesh_var * mv,
 
     double tau; // the length of the time step
     double t_all = 0.0;
-    const double delta_plot_t = 0.1;
     double plot_t = 0.0;
     int i, j, k, l, stop_step = 0, stop_t = 0;
 
@@ -162,9 +160,12 @@ void finite_volume_scheme_GRP2D(struct flu_var * FV, const struct mesh_var * mv,
     double S, S_tmp, S_tmpL, S_tmpR, area_L, area_R, RHO_s_cell, ZRHO_s_cell;
     double z_sL, z_sR, z_sxL, z_sxR, z_syL, z_syR;
 
+    const double NS = 0.0;    
+    const int BND=0; //boundary condition: BND=0(free), BND=1(wall).
+    const double delta_plot_t = 0.1;
+    
     for(l = 0; l < (int)config[5] && stop_step != 1; ++l) {
 	start_clock = clock();
-	const int BND=1; //boundary condition: BND=0(free), BND=1(wall).
 	if (stop_step == 0) {
 	    boundary_cond_x(C,0);
 	    boundary_cond_y(C,BND);
@@ -205,8 +206,9 @@ void finite_volume_scheme_GRP2D(struct flu_var * FV, const struct mesh_var * mv,
 		    BN_RI2Cy(RI,C,i,j);
 		}
 	}
-	slope_simiter3_GRP(F, C, SV);
-	boundary_cond_slope(SV);
+    slope_simiter3_GRP(F, C, SV);
+    boundary_cond_slope_x(SV,0);
+    boundary_cond_slope_y(SV,BND);	
 	char plot_dir[FILENAME_MAX];
 	if (t_all >= plot_t) {
 	    for(i = 1; i < n_y-1; ++i)
@@ -494,14 +496,14 @@ void finite_volume_scheme_GRP2D(struct flu_var * FV, const struct mesh_var * mv,
     for(i = 1; i < n_y-1; ++i)
 	for(j = 1; j < n_x-1; ++j) {
 	    ij0 = (i-1)*n_x0+j-1;
-	    if (strcmp(problem,"s") == 0) {
+	    if (strcmp(scheme,"s") == 0) {
 		FV->RHO[ij0] = C.RHO_sC[i][j];
 		FV->U[ij0]   = C.U_sC[i][j];
 		FV->V[ij0]   = C.V_sC[i][j];
 		FV->P[ij0]   = C.P_sC[i][j];
 		FV->PHI[ij0] = C.Z_sC[i][j];
 	    }
-	    else if (strcmp(problem,"g") == 0) {
+	    else if (strcmp(scheme,"g") == 0) {
 		FV->RHO[ij0] = C.RHO_gC[i][j];
 		FV->U[ij0]   = C.U_gC[i][j];
 		FV->V[ij0]   = C.V_gC[i][j];

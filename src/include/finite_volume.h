@@ -59,4 +59,5 @@ void GRP_RI_var_init(struct GRP_LR_var *G, struct slope_var SV, struct center_va
 void G_LR_RI2U(struct GRP_LR_var *G, double z_s, int x_or_y);
 void boundary_cond_x(struct center_var C, int cond);
 void boundary_cond_y(struct center_var C, int cond);
-void boundary_cond_slope(struct slope_var SV);
+void boundary_cond_slope_x(struct slope_var SV, int cond);
+void boundary_cond_slope_y(struct slope_var SV, int cond);

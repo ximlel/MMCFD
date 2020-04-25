@@ -261,20 +261,24 @@ void boundary_cond_x(struct center_var C, int cond)
     for(i = 0; i < n_y; ++i) {
 	C.Z_sC[i][n_x-2]  = C.Z_sC[i][n_x-3];
 	for(k=0, p=&C.Z_sC; k<sizeof(struct center_var)/sizeof(double **); k++, p++) {
-	    (*p)[i][n_x-1] = (*p)[i][n_x-2];
-	    (*p)[i][0]     = (*p)[i][1];
-	}
-	if (cond == 1) { // wall condition
-	    C.RHO_U_gC[i][n_x-1] = -C.RHO_U_gC[i][n_x-2];
-	    C.RHO_U_sC[i][n_x-1] = -C.RHO_U_sC[i][n_x-2];			
-	    C.RHO_U_gC[i][0]     = -C.RHO_U_gC[i][1];
-	    C.RHO_U_sC[i][0]     = -C.RHO_U_sC[i][1];
-	    C.U_gC[i][n_x-1]     = -C.U_gC[i][n_x-2];
-	    C.U_sC[i][n_x-1]     = -C.U_sC[i][n_x-2];			
-	    C.U_gC[i][0]         = -C.U_gC[i][1];
-	    C.U_sC[i][0]         = -C.U_sC[i][1];
-	   // C.Q_xd[i][n_x-1]     = -C.Q_xd[i][n_x-2];
-	   // C.Q_xd[i][0]         = -C.Q_xd[i][1];
+	    if (cond != 1 && k < 1) {
+		(*p)[i][n_x-1] = (*p)[i][n_x-2];
+		(*p)[i][0]     = (*p)[i][1];		    
+	    }
+	    else if (cond != 1) {
+		(*p)[i][n_x-2] = (*p)[i][n_x-3];		
+		(*p)[i][n_x-1] = (*p)[i][n_x-2];
+		(*p)[i][0]     = (*p)[i][1];		    
+	    }
+	    else if (k < 1) { // wall condition
+		(*p)[i][n_x-1] = (*p)[i][1];		
+		(*p)[i][0]     = (*p)[i][n_x-2];
+	    }
+	    else {
+		(*p)[i][n_x-1] = (*p)[i][2];
+		(*p)[i][0]     = (*p)[i][n_x-3];
+		(*p)[i][1]     = (*p)[i][n_x-2];	
+	    }		
 	}
     }
 }
@@ -286,45 +290,83 @@ void boundary_cond_y(struct center_var C, int cond)
     int j,k;
     double ***p;
     for(j = 0; j < n_x; ++j) {
-	C.Z_sC[n_y-2][j]  = C.Z_sC[n_y-3][j];		
 	for(k=0, p=&C.Z_sC; k<sizeof(struct center_var)/sizeof(double **); k++, p++) {
-	    (*p)[n_y-1][j] = (*p)[n_y-2][j];
-	    (*p)[0][j]     = (*p)[1][j];
-	}
-	if (cond == 1) { // wall condition
-	    C.RHO_V_gC[n_y-1][j] = -C.RHO_V_gC[n_y-2][j];
-	    C.RHO_V_sC[n_y-1][j] = -C.RHO_V_sC[n_y-2][j];
-	    C.RHO_V_gC[0][j]     = -C.RHO_V_gC[1][j];
-	    C.RHO_V_sC[0][j]     = -C.RHO_V_sC[1][j];
-	    C.V_gC[n_y-1][j]     = -C.V_gC[n_y-2][j];
-	    C.V_sC[n_y-1][j]     = -C.V_sC[n_y-2][j];
-	    C.V_gC[0][j]         = -C.V_gC[1][j];
-	    C.V_sC[0][j]         = -C.V_sC[1][j];
-	   // C.Q_yd[n_y-1][j]     = -C.Q_yd[n_y-2][j];
-	   // C.Q_yd[0][j]         = -C.Q_yd[1][j];
+	    if (cond != 1 && k < 1) {			    
+		(*p)[n_y-1][j] = (*p)[n_y-2][j];
+		(*p)[0][j]     = (*p)[1][j];
+	    }
+	    else if (cond != 1) {
+		(*p)[n_y-2][j] = (*p)[n_y-3][j];		
+		(*p)[n_y-1][j] = (*p)[n_y-2][j];
+		(*p)[0][j]     = (*p)[1][j];		    
+	    }
+	    else if (k < 1) { // wall condition
+		(*p)[n_y-1][j] = (*p)[1][j];
+		(*p)[0][j]     = (*p)[n_y-2][j];		    
+	    }
+	    else {
+		(*p)[n_y-1][j] = (*p)[2][j];		
+		(*p)[0][j]     = (*p)[n_y-3][j];
+		(*p)[1][j]     = (*p)[n_y-2][j];   
+	    }
 	}
     }
 }
 
-void boundary_cond_slope(struct slope_var SV)
+void boundary_cond_slope_x(struct slope_var SV, int cond)
 {
     const int n_y = (int)config[14]+2, n_x = (int)config[13]+2;
-    int i,j,k;
+    int i,k;
     double ***p;
     for(i = 0; i < n_y; ++i) {
-	SV.Z_sx[i][n_x-2] = SV.Z_sx[i][n_x-3];
-	SV.Z_sy[i][n_x-2] = SV.Z_sy[i][n_x-3];
 	for(k=0, p=&SV.Z_sx; k<sizeof(struct slope_var)/sizeof(double **); k++, p++) {
-	    (*p)[i][n_x-1] = (*p)[i][n_x-2];
-	    (*p)[i][0]     = (*p)[i][1];
+	    if (cond != 1 && k < 1) {
+		(*p)[i][n_x-1] = (*p)[i][n_x-2];
+		(*p)[i][0]     = (*p)[i][1];		    
+	    }
+	    else if (cond != 1) {
+		(*p)[i][n_x-2] = (*p)[i][n_x-3];		
+		(*p)[i][n_x-1] = (*p)[i][n_x-2];
+		(*p)[i][0]     = (*p)[i][1];		    
+	    }
+	    else if (k < 1) { // wall condition
+		(*p)[i][n_x-1] = (*p)[i][1];		
+		(*p)[i][0]     = (*p)[i][n_x-2];
+	    }
+	    else {
+		(*p)[i][n_x-1] = (*p)[i][2];
+		(*p)[i][0]     = (*p)[i][n_x-3];
+		(*p)[i][1]     = (*p)[i][n_x-2];				
+	    }
 	}
     }
-    for(j = 0; j < n_x; ++j) {
-	SV.Z_sx[n_y-2][j] = SV.Z_sx[n_y-3][j];		
-	SV.Z_sy[n_y-2][j] = SV.Z_sy[n_y-3][j];		
+}
+
+void boundary_cond_slope_y(struct slope_var SV, int cond)
+{
+    const int n_y = (int)config[14]+2, n_x = (int)config[13]+2;
+    int j,k;
+    double ***p;
+    for(j = 0; j < n_x; ++j) {		
 	for(k=0, p=&SV.Z_sx; k<sizeof(struct slope_var)/sizeof(double **); k++, p++) {
-	    (*p)[n_y-1][j] = (*p)[n_y-2][j];
-	    (*p)[0][j]     = (*p)[1][j];
+	    if (cond != 1 && k < 2) {			    
+		(*p)[n_y-1][j] = (*p)[n_y-2][j];
+		(*p)[0][j]     = (*p)[1][j];
+	    }
+	    else if (cond != 1) {
+		(*p)[n_y-2][j] = (*p)[n_y-3][j];		
+		(*p)[n_y-1][j] = (*p)[n_y-2][j];
+		(*p)[0][j]     = (*p)[1][j];		    
+	    }
+	    else if (k < 2) { // wall condition
+		(*p)[n_y-1][j] = (*p)[1][j];
+		(*p)[0][j]     = (*p)[n_y-2][j];		    
+	    }
+	    else {
+		(*p)[n_y-1][j] = (*p)[2][j];		
+		(*p)[0][j]     = (*p)[n_y-3][j];
+		(*p)[1][j]     = (*p)[n_y-2][j];		    
+	    }
 	}
     }
 }
