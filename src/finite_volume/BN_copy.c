@@ -76,6 +76,16 @@ void BN_ULR2cons(struct U_var U_L, struct U_var U_R, struct center_var C, int i,
     }
 }
 
+void RI_LR_ave(struct RI_var *RI, struct RI_var RI_L,struct RI_var RI_R)
+{
+    RI->eta_g=0.5*(RI_L.eta_g+RI_R.eta_g);
+    RI->Q    =0.5*(RI_L.Q    +RI_R.Q);
+    RI->P    =0.5*(RI_L.P    +RI_R.P);
+    RI->H    =0.5*(RI_L.H    +RI_R.H);
+    RI->rho_s=0.5*(RI_L.rho_s+RI_R.rho_s);
+    RI->u_s  =0.5*(RI_L.u_s  +RI_R.u_s); 
+}
+
 void BN_RI2Cx(struct RI_var RI, struct center_var C, int i, int j)
 {
     C.Q_xd[i][j]=RI.Q;

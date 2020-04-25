@@ -51,6 +51,7 @@ void primitive_comp(double * U, struct U_var * U_L, struct U_var * U_R, double z
 void BN_C2U(struct center_var C, double *U, int i, int j, int x_or_y);
 void BN_ULR2prim(struct U_var U_L, struct U_var U_R, struct center_var C, int i, int j, int x_or_y);
 void BN_ULR2cons(struct U_var U_L, struct U_var U_R, struct center_var C, int i, int j, int x_or_y);
+void RI_LR_ave(struct RI_var *RI, struct RI_var RI_L,struct RI_var RI_R);
 void BN_RI2Cx(struct RI_var RI, struct center_var C, int i, int j);
 void BN_RI2Cy(struct RI_var RI, struct center_var C, int i, int j);
 void GRP_var_init(struct GRP_LR_var *G, struct slope_var SV, struct U_var U, double d, int i, int j, int pm_xy);
