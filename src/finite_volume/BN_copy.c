@@ -266,9 +266,9 @@ void boundary_cond_x(struct center_var C, int cond)
 		(*p)[i][0]     = (*p)[i][1];		    
 	    }
 	    else if (cond != 1) {
-		(*p)[i][n_x-2] = (*p)[i][n_x-3];		
 		(*p)[i][n_x-1] = (*p)[i][n_x-2];
-		(*p)[i][0]     = (*p)[i][1];		    
+		(*p)[i][1]     = (*p)[i][2];		    
+		(*p)[i][0]     = (*p)[i][1];	    
 	    }
 	    else if (k < 1) { // wall condition
 		(*p)[i][n_x-1] = (*p)[i][1];		
@@ -296,8 +296,8 @@ void boundary_cond_y(struct center_var C, int cond)
 		(*p)[0][j]     = (*p)[1][j];
 	    }
 	    else if (cond != 1) {
-		(*p)[n_y-2][j] = (*p)[n_y-3][j];		
 		(*p)[n_y-1][j] = (*p)[n_y-2][j];
+		(*p)[1][j]     = (*p)[2][j];		    
 		(*p)[0][j]     = (*p)[1][j];		    
 	    }
 	    else if (k < 1) { // wall condition
@@ -325,8 +325,8 @@ void boundary_cond_slope_x(struct slope_var SV, int cond)
 		(*p)[i][0]     = (*p)[i][1];		    
 	    }
 	    else if (cond != 1) {
-		(*p)[i][n_x-2] = (*p)[i][n_x-3];		
 		(*p)[i][n_x-1] = (*p)[i][n_x-2];
+		(*p)[i][1]     = (*p)[i][2];		    
 		(*p)[i][0]     = (*p)[i][1];		    
 	    }
 	    else if (k < 1) { // wall condition
@@ -354,8 +354,8 @@ void boundary_cond_slope_y(struct slope_var SV, int cond)
 		(*p)[0][j]     = (*p)[1][j];
 	    }
 	    else if (cond != 1) {
-		(*p)[n_y-2][j] = (*p)[n_y-3][j];		
 		(*p)[n_y-1][j] = (*p)[n_y-2][j];
+		(*p)[1][j]     = (*p)[2][j];		    
 		(*p)[0][j]     = (*p)[1][j];		    
 	    }
 	    else if (k < 2) { // wall condition
