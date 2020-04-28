@@ -253,7 +253,7 @@ void G_LR_RI2U(struct GRP_LR_var *G, double z_s, int x_or_y)
 }
 /* x方向的边界条件
  */
-void boundary_cond_x(struct center_var C, int cond)
+void boundary_cond_x(struct center_var C, int cond, int l)
 {
     const int n_y = (int)config[14]+2, n_x = (int)config[13]+2;
     int i,k;
@@ -262,11 +262,13 @@ void boundary_cond_x(struct center_var C, int cond)
 	C.Z_sC[i][n_x-2]  = C.Z_sC[i][n_x-3];
 	for(k=0, p=&C.Z_sC; k<sizeof(struct center_var)/sizeof(double **); k++, p++) {
 	    if (cond != 1 && k < 1) {
-		(*p)[i][n_x-1] = (*p)[i][n_x-2];
+		if (cond != -1 || l < 2)
+		    (*p)[i][n_x-1] = (*p)[i][n_x-2];
 		(*p)[i][0]     = (*p)[i][1];		    
 	    }
 	    else if (cond != 1) {
-		(*p)[i][n_x-1] = (*p)[i][n_x-2];
+		if (cond != -1 || l < 2)
+		    (*p)[i][n_x-1] = (*p)[i][n_x-2];
 		(*p)[i][1]     = (*p)[i][2];		    
 		(*p)[i][0]     = (*p)[i][1];	    
 	    }
@@ -284,7 +286,7 @@ void boundary_cond_x(struct center_var C, int cond)
 }
 /* y方向的边界条件
  */
-void boundary_cond_y(struct center_var C, int cond)
+void boundary_cond_y(struct center_var C, int cond, int l)
 {
     const int n_y = (int)config[14]+2, n_x = (int)config[13]+2;
     int j,k;
@@ -292,11 +294,13 @@ void boundary_cond_y(struct center_var C, int cond)
     for(j = 0; j < n_x; ++j) {
 	for(k=0, p=&C.Z_sC; k<sizeof(struct center_var)/sizeof(double **); k++, p++) {
 	    if (cond != 1 && k < 1) {			    
-		(*p)[n_y-1][j] = (*p)[n_y-2][j];
+		if (cond != -1 || l < 2)
+		    (*p)[n_y-1][j] = (*p)[n_y-2][j];
 		(*p)[0][j]     = (*p)[1][j];
 	    }
 	    else if (cond != 1) {
-		(*p)[n_y-1][j] = (*p)[n_y-2][j];
+		if (cond != -1 || l < 2)
+		    (*p)[n_y-1][j] = (*p)[n_y-2][j];
 		(*p)[1][j]     = (*p)[2][j];		    
 		(*p)[0][j]     = (*p)[1][j];		    
 	    }
@@ -313,7 +317,7 @@ void boundary_cond_y(struct center_var C, int cond)
     }
 }
 
-void boundary_cond_slope_x(struct slope_var SV, int cond)
+void boundary_cond_slope_x(struct slope_var SV, int cond, int l)
 {
     const int n_y = (int)config[14]+2, n_x = (int)config[13]+2;
     int i,k;
@@ -321,11 +325,13 @@ void boundary_cond_slope_x(struct slope_var SV, int cond)
     for(i = 0; i < n_y; ++i) {
 	for(k=0, p=&SV.Z_sx; k<sizeof(struct slope_var)/sizeof(double **); k++, p++) {
 	    if (cond != 1 && k < 1) {
-		(*p)[i][n_x-1] = (*p)[i][n_x-2];
+		if (cond != -1 || l < 2)
+		    (*p)[i][n_x-1] = (*p)[i][n_x-2];
 		(*p)[i][0]     = (*p)[i][1];		    
 	    }
 	    else if (cond != 1) {
-		(*p)[i][n_x-1] = (*p)[i][n_x-2];
+		if (cond != -1 || l < 2)
+		    (*p)[i][n_x-1] = (*p)[i][n_x-2];
 		(*p)[i][1]     = (*p)[i][2];		    
 		(*p)[i][0]     = (*p)[i][1];		    
 	    }
@@ -342,7 +348,7 @@ void boundary_cond_slope_x(struct slope_var SV, int cond)
     }
 }
 
-void boundary_cond_slope_y(struct slope_var SV, int cond)
+void boundary_cond_slope_y(struct slope_var SV, int cond, int l)
 {
     const int n_y = (int)config[14]+2, n_x = (int)config[13]+2;
     int j,k;
@@ -350,11 +356,13 @@ void boundary_cond_slope_y(struct slope_var SV, int cond)
     for(j = 0; j < n_x; ++j) {		
 	for(k=0, p=&SV.Z_sx; k<sizeof(struct slope_var)/sizeof(double **); k++, p++) {
 	    if (cond != 1 && k < 2) {			    
-		(*p)[n_y-1][j] = (*p)[n_y-2][j];
+		if (cond != -1 || l < 2)
+		    (*p)[n_y-1][j] = (*p)[n_y-2][j];
 		(*p)[0][j]     = (*p)[1][j];
 	    }
 	    else if (cond != 1) {
-		(*p)[n_y-1][j] = (*p)[n_y-2][j];
+		if (cond != -1 || l < 2)
+		    (*p)[n_y-1][j] = (*p)[n_y-2][j];
 		(*p)[1][j]     = (*p)[2][j];		    
 		(*p)[0][j]     = (*p)[1][j];		    
 	    }
