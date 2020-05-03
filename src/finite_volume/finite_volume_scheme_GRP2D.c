@@ -161,7 +161,7 @@ void finite_volume_scheme_GRP2D(struct flu_var * FV, const struct mesh_var * mv,
     double z_sL, z_sR, z_sxL, z_sxR, z_syL, z_syR;
 
     const double NS = 0.0;    
-    const int BND_X=0, BND_Y=1; //boundary condition: BND=0(free), BND=-1(init_right), BND=1(wall).
+    const int BND_X=0, BND_Y=0; //boundary condition: BND=0(free), BND=-1(init_right), BND=1(wall).
     const double delta_plot_t = 0.05;
     
     for(l = 0; l < (int)config[5] && stop_step != 1; ++l) {

@@ -49,8 +49,8 @@ read
 
 #  ./hydrocode.out RP2D_BN1_1000 RP2D_BN1/RP2D_BN1_1000_g 2 1_g free
 #  ./hydrocode.out RP2D_BN1_1000 RP2D_BN1/RP2D_BN1_1000_s 2 1_s free
-#  ./hydrocode.out RP2D_BN2_1000 RP2D_BN2/RP2D_BN2_1000_g 2 1_g free
-#  ./hydrocode.out RP2D_BN2_1000 RP2D_BN2/RP2D_BN2_1000_s 2 1_s free
+# ./hydrocode.out RP2D_BN2_1000 RP2D_BN2/RP2D_BN2_1000_g 2 1_g free
+  ./hydrocode.out RP2D_BN2_1000 RP2D_BN2/RP2D_BN2_1000_s 2 1_s free
 #  ./hydrocode.out RP2D_BN1 RP2D_BN1/RP2D_BN1_g 2 2_g free
 #  ./hydrocode.out RP2D_BN1 RP2D_BN1/RP2D_BN1_s 2 2_s free
 #  ./hydrocode.out RP2D_BN2 RP2D_BN2/RP2D_BN2_g 2 2_g free
@@ -69,7 +69,7 @@ read
 # ./hydrocode.out Gas_Colume2_small Gas_Colume2_small/Gas_Colume 2 1_g free
 # ./hydrocode.out Gas_Colume2_small Gas_Colume2_small/Gas_Colume 2 2_g free
 
- ./hydrocode.out Solid_Colume_small Solid_Colume_small/Solid_Colume 2 2_s free
+# ./hydrocode.out Solid_Colume_small Solid_Colume_small/Solid_Colume 2 2_s free
 # ./hydrocode.out Gas_Colume_small Gas_Colume_small/Gas_Colume 2 2_g free
  
 #./hydrocode.out RMI/RMI_81	RMI/RMI_81	2 1_Riemann_exact RMI
