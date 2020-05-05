@@ -31,12 +31,12 @@ void NewtonRapshon_matrix(double * x_star, double * err, double * fun, double * 
     rinv(dfun,4); //Matrix inv of dfun
     int i,j;
     if (V_norm(fun) > eps) {
-	for(i=0; i++; i<4)
-	    for(j=0; j++; j<4)
-		d[i]-=fun[j]*(*(dfun+i*4+j));			
+	for(i=0; i<4; i++)
+	    for(j=0; j<4; j++)
+		d[i]-=fun[j]*(*(dfun+i+j*4));
     }
     //V_add(x_star, x_star, d);
-    for(i=0; i++; i<4)
+    for(i=0; i<4; i++)
 	x_star[i] = x_star[i]+d[i];
     * err = V_norm(d);
 }
@@ -114,7 +114,7 @@ void primitive_comp(double * U, struct U_var * U_L, struct U_var * U_R, double z
     double fun[4], dfun[4][4], x_star[4];
     int it_max = 500, k = 0;
     double err2 = 1e50;
-    while (k<it_max && err2>eps && abs(z_sL-z_sR)>eps) {			
+    while (k<it_max && err2>eps && fabs(z_sL-z_sR)>eps) {			
 	fun[0] = U3-area_L*z_gL*(0.5*((U1-area_R*z_gR*rho_gR)/area_L/z_gL)*pow((U2-area_R*z_gR*rho_gR*u_gR)/(U1-area_R*z_gR*rho_gR),2.0)+(p_gR/pow(rho_gR,gama_g)*pow((U1-area_R*z_gR*rho_gR)/area_L/z_gL,gama_g))/(gama_g-1.0))-area_R*z_gR*(0.5*rho_gR*pow(u_gR,2.0)+p_gR/(gama_g-1.0));
 	fun[1] = z_gL*((U1-area_R*z_gR*rho_gR)/area_L/z_gL)*(((U2-area_R*z_gR*rho_gR*u_gR)/(U1-area_R*z_gR*rho_gR))-u_s)-z_gR*rho_gR*(u_gR-u_s);
 	fun[2] = z_gL*((U1-area_R*z_gR*rho_gR)/area_L/z_gL)*pow(((U2-area_R*z_gR*rho_gR*u_gR)/(U1-area_R*z_gR*rho_gR))-u_s,2.0)+z_gL*(p_gR/pow(rho_gR,gama_g)*pow((U1-area_R*z_gR*rho_gR)/area_L/z_gL,gama_g))+z_sL*(((U6-0.5*z_s*rho_s*pow(u_s,2.0))*(gama_s-1.0)-area_R*z_sR*p_sR)/area_L/z_sL)-z_gR*rho_gR*pow(u_gR-u_s,2.0)-z_gR*p_gR-z_sR*p_sR;
@@ -163,7 +163,13 @@ void primitive_comp(double * U, struct U_var * U_L, struct U_var * U_R, double z
     U_R->rho_s= rho_s;
     U_L->u_s = u_s;
     U_R->u_s = u_s;
-
+    
+    struct RI_var RI_L, RI_R;
+    U2RI_cal(U_L, &RI_L);
+    RI2U_cal(U_L, &RI_L, z_sL_out, U_L->rho_g);
+    U2RI_cal(U_R, &RI_R);
+    RI2U_cal(U_R, &RI_R, z_sR_out, U_R->rho_g);
+    
     U_L->U_rho_g = (1.0-z_sL_out)*U_L->rho_g;
     U_L->U_u_g  = U_L->U_rho_g*U_L->u_g;
     U_L->U_v_g  = U_L->U_rho_g*U_L->v_g;

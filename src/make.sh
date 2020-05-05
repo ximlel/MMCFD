@@ -50,11 +50,15 @@ read
 #  ./hydrocode.out RP2D_BN1_1000 RP2D_BN1/RP2D_BN1_1000_g 2 1_g free
 #  ./hydrocode.out RP2D_BN1_1000 RP2D_BN1/RP2D_BN1_1000_s 2 1_s free
 # ./hydrocode.out RP2D_BN2_1000 RP2D_BN2/RP2D_BN2_1000_g 2 1_g free
-  ./hydrocode.out RP2D_BN2_1000 RP2D_BN2/RP2D_BN2_1000_s 2 1_s free
+#  ./hydrocode.out RP2D_BN2_1000 RP2D_BN2/RP2D_BN2_1000_s 2 1_s free
 #  ./hydrocode.out RP2D_BN1 RP2D_BN1/RP2D_BN1_g 2 2_g free
 #  ./hydrocode.out RP2D_BN1 RP2D_BN1/RP2D_BN1_s 2 2_s free
 #  ./hydrocode.out RP2D_BN2 RP2D_BN2/RP2D_BN2_g 2 2_g free
 #  ./hydrocode.out RP2D_BN2 RP2D_BN2/RP2D_BN2_s 2 2_s free
+  ./hydrocode.out RP2D_BN3 RP2D_BN3/RP2D_BN3_s 2 1_s free
+  ./hydrocode.out RP2D_BN3 RP2D_BN3/RP2D_BN3_g 2 1_g free
+#  ./hydrocode.out RP2D_BN4 RP2D_BN4/RP2D_BN4_s 2 1_s free
+#  ./hydrocode.out RP2D_BN4 RP2D_BN4/RP2D_BN4_g 2 1_g free
 
 # ./hydrocode.out Solid_Colume Solid_Colume/Solid_Colume 2 1_s free
 # ./hydrocode.out Solid_Colume Solid_Colume/Solid_Colume 2 2_s free

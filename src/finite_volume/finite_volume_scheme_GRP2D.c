@@ -219,6 +219,14 @@ void finite_volume_scheme_GRP2D(struct flu_var * FV, const struct mesh_var * mv,
 		    FV->V[ij0]   = C.V_sC[i][j];
 		    FV->P[ij0]   = C.P_sC[i][j];
 		    FV->PHI[ij0] = C.Z_sC[i][j];
+            if (i >= n_y/2)
+            {
+                FV->RHO[ij0] = C.RHO_sC[n_y-1-i][j]*C.Z_sC[n_y-1-i][j]+C.RHO_gC[n_y-1-i][j]*(1.0-C.Z_sC[n_y-1-i][j]);
+                FV->U[ij0]   = C.U_sC[n_y-1-i][j];
+                FV->V[ij0]   =-C.V_sC[n_y-1-i][j];
+                FV->P[ij0]   = C.P_sC[n_y-1-i][j];
+                FV->PHI[ij0] = C.Z_sC[n_y-1-i][j];
+            }
 		}
 	    strcpy(plot_dir, problem);
 	    strcat(plot_dir, "_s");
@@ -231,13 +239,20 @@ void finite_volume_scheme_GRP2D(struct flu_var * FV, const struct mesh_var * mv,
 		    FV->V[ij0]   = C.V_gC[i][j];
 		    FV->P[ij0]   = C.P_gC[i][j];
 		    FV->PHI[ij0] = 1.0-C.Z_sC[i][j];
+            if (i >= n_y/2)
+            {
+                FV->RHO[ij0] = C.RHO_gC[n_y-1-i][j];
+                FV->U[ij0]   = C.U_gC[n_y-1-i][j];
+                FV->V[ij0]   =-C.V_gC[n_y-1-i][j];
+                FV->P[ij0]   = C.P_gC[n_y-1-i][j];
+                FV->PHI[ij0] = 1.0-C.Z_sC[n_y-1-i][j];
+            }
 		}
 	    strcpy(plot_dir, problem);
 	    strcat(plot_dir, "_g");
 	    file_write_TEC(*FV, *mv, plot_dir, plot_t, dim);
 	    plot_t += delta_plot_t;
 	}
-    
 	if (stop_step == 0) {
 	    tau = 1e15;
 	    for(i = 1; i < n_y-1; ++i)
@@ -265,7 +280,7 @@ void finite_volume_scheme_GRP2D(struct flu_var * FV, const struct mesh_var * mv,
 	    for(i = 1; i <  n_y-1; ++i)
 		for(j = 1; j < n_x; ++j) {
 		    jL = j-1; jR = j;
-		    z_smid = U_R[i][jL].z_s;
+		    z_smid = 0.5*(U_R[i][jL].z_s+U_L[i][jR].z_s);
 		    z_gmid = 1.0-z_smid;
 		    z_sx_mid = SV.Z_sS_x[i][j];
 		    GRP_var_init(&GL, SV, U_R[i][jL], dx, i, jL, 0);
@@ -375,7 +390,7 @@ void finite_volume_scheme_GRP2D(struct flu_var * FV, const struct mesh_var * mv,
 	    for(j = 1; j <  n_x-1; ++j)
 		for(i = 1; i < n_y; ++i) {
 		    iL = i-1; iR = i;
-		    z_smid = U_R[iL][j].z_s;
+		    z_smid = 0.5*(U_R[iL][j].z_s+U_L[iR][j].z_s);
 		    z_gmid = 1.0-z_smid;
 		    z_sy_mid = SV.Z_sS_y[i][j];
 		    GRP_var_init(&GL, SV, U_R[iL][j], dy, iL, j, 2);
