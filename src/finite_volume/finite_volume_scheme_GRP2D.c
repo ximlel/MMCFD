@@ -59,7 +59,7 @@ static void slope_simiter3_GRP(struct face_var FV, struct center_var CV, struct 
     const double eps = config[4];
     const int n_x = (int)config[13]+2, n_y = (int)config[14]+2;
     const double dx = config[10], dy = config[11];
-    int HN = 2; // admissible number of cells with gradient 0 at porosity interfaces
+    int HN = 1; // admissible number of cells with gradient 0 at porosity interfaces
     int i,iL,iR, j,jL,jR, k,l,m;
     double ***q;
     for(i = 1; i < n_y-1; ++i)
@@ -90,15 +90,15 @@ static void slope_simiter3_GRP(struct face_var FV, struct center_var CV, struct 
 	    iR = i+1<=n_y-2?i+1:n_y-2;
 	    jL = j-1>=1    ?j-1:1;
 	    jR = j+1<=n_x-2?j+1:n_x-2;
-	    //	    if (fabs(CV.Z_sC[iR][j]-CV.Z_sC[i][j])>eps || fabs(CV.Z_sC[i][j]-CV.Z_sC[iL][j])>eps ||
-	    //		fabs(CV.Z_sC[i][jR]-CV.Z_sC[i][j])>eps || fabs(CV.Z_sC[i][j]-CV.Z_sC[i][jL])>eps)		
+	    	    if (fabs(CV.Z_sC[iR][j]-CV.Z_sC[i][j])>eps || fabs(CV.Z_sC[i][j]-CV.Z_sC[iL][j])>eps ||
+	    		fabs(CV.Z_sC[i][jR]-CV.Z_sC[i][j])>eps || fabs(CV.Z_sC[i][j]-CV.Z_sC[i][jL])>eps)		
 	    //		SV.idx[i][j] = 1.0;
-	    // 	    for (k = -HN; k <= HN; k++)
-	    // 		for (l = -HN; l <= HN; l++) {
-	    // 		    if (i+k >= 0 && i+k < n_y && j+l >=0 && j+l < n_x)
-	    // 			for(m=0, q=&SV.Z_sx; m<sizeof(struct slope_var)/sizeof(double **); m++,q++)
-	    // 			    (*q)[i+k][j+l] = 0.0; 
-	    // 		}
+	    	    for (k = -HN; k <= HN; k++)
+	    		for (l = -HN; l <= HN; l++) {
+	    		    if (i+k >= 0 && i+k < n_y && j+l >=0 && j+l < n_x)
+	    			for(m=0, q=&SV.RHO_gx; m<sizeof(struct slope_var)/sizeof(double **)-2; m++,q++)
+	    			    (*q)[i+k][j+l] = 0.0; 
+	    		}
 	}
 }
 
@@ -162,7 +162,7 @@ void finite_volume_scheme_GRP2D(struct flu_var * FV, const struct mesh_var * mv,
 
     const double NS = 0.0;    
     const int BND_X=0, BND_Y=0; //boundary condition: BND=0(free), BND=-1(init_right), BND=1(wall).
-    const double delta_plot_t = 0.05;
+    const double delta_plot_t = 0.001;
     
     for(l = 0; l < (int)config[5] && stop_step != 1; ++l) {
 	start_clock = clock();
@@ -219,14 +219,14 @@ void finite_volume_scheme_GRP2D(struct flu_var * FV, const struct mesh_var * mv,
 		    FV->V[ij0]   = C.V_sC[i][j];
 		    FV->P[ij0]   = C.P_sC[i][j];
 		    FV->PHI[ij0] = C.Z_sC[i][j];
-            if (i >= n_y/2)
-            {
-                FV->RHO[ij0] = C.RHO_sC[n_y-1-i][j]*C.Z_sC[n_y-1-i][j]+C.RHO_gC[n_y-1-i][j]*(1.0-C.Z_sC[n_y-1-i][j]);
-                FV->U[ij0]   = C.U_sC[n_y-1-i][j];
-                FV->V[ij0]   =-C.V_sC[n_y-1-i][j];
-                FV->P[ij0]   = C.P_sC[n_y-1-i][j];
-                FV->PHI[ij0] = C.Z_sC[n_y-1-i][j];
-            }
+//             if (i >= n_y/2)
+//             {
+//                 FV->RHO[ij0] = C.RHO_sC[n_y-1-i][j]*C.Z_sC[n_y-1-i][j]+C.RHO_gC[n_y-1-i][j]*(1.0-C.Z_sC[n_y-1-i][j]);
+//                 FV->U[ij0]   = C.U_sC[n_y-1-i][j];
+//                 FV->V[ij0]   =-C.V_sC[n_y-1-i][j];
+//                 FV->P[ij0]   = C.P_sC[n_y-1-i][j];
+//                 FV->PHI[ij0] = C.Z_sC[n_y-1-i][j];
+//             }
 		}
 	    strcpy(plot_dir, problem);
 	    strcat(plot_dir, "_s");
@@ -239,20 +239,21 @@ void finite_volume_scheme_GRP2D(struct flu_var * FV, const struct mesh_var * mv,
 		    FV->V[ij0]   = C.V_gC[i][j];
 		    FV->P[ij0]   = C.P_gC[i][j];
 		    FV->PHI[ij0] = 1.0-C.Z_sC[i][j];
-            if (i >= n_y/2)
-            {
-                FV->RHO[ij0] = C.RHO_gC[n_y-1-i][j];
-                FV->U[ij0]   = C.U_gC[n_y-1-i][j];
-                FV->V[ij0]   =-C.V_gC[n_y-1-i][j];
-                FV->P[ij0]   = C.P_gC[n_y-1-i][j];
-                FV->PHI[ij0] = 1.0-C.Z_sC[n_y-1-i][j];
-            }
+//             if (i >= n_y/2)
+//             {
+//                 FV->RHO[ij0] = C.RHO_gC[n_y-1-i][j];
+//                 FV->U[ij0]   = C.U_gC[n_y-1-i][j];
+//                 FV->V[ij0]   =-C.V_gC[n_y-1-i][j];
+//                 FV->P[ij0]   = C.P_gC[n_y-1-i][j];
+//                 FV->PHI[ij0] = 1.0-C.Z_sC[n_y-1-i][j];
+//             }
 		}
 	    strcpy(plot_dir, problem);
 	    strcat(plot_dir, "_g");
 	    file_write_TEC(*FV, *mv, plot_dir, plot_t, dim);
 	    plot_t += delta_plot_t;
 	}
+
 	if (stop_step == 0) {
 	    tau = 1e15;
 	    for(i = 1; i < n_y-1; ++i)

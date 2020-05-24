@@ -1,9 +1,9 @@
 #!/usr/bin/python3
 
-line=200;
-column=200;
-line_discon=100;
-column_discon=100;
+line=1000;
+column=1000;
+line_discon=500;
+column_discon=500;
 
 gamma_1 = 1.4;
 gamma_2 = 1.4;
