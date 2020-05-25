@@ -56,7 +56,7 @@ static double minmod2(const double a, const double b)
 static void slope_simiter3_GRP(struct face_var FV, struct center_var CV, struct slope_var SV)
 {
     const int order = (int)config[9];
-    const double eps = config[4];
+    const double eps = config[4], eps2 = 1e-2;
     const int n_x = (int)config[13]+2, n_y = (int)config[14]+2;
     const double dx = config[10], dy = config[11];
     int HN = 1; // admissible number of cells with gradient 0 at porosity interfaces
@@ -90,13 +90,13 @@ static void slope_simiter3_GRP(struct face_var FV, struct center_var CV, struct 
 	    iR = i+1<=n_y-2?i+1:n_y-2;
 	    jL = j-1>=1    ?j-1:1;
 	    jR = j+1<=n_x-2?j+1:n_x-2;
-	    	    if (fabs(CV.Z_sC[iR][j]-CV.Z_sC[i][j])>eps || fabs(CV.Z_sC[i][j]-CV.Z_sC[iL][j])>eps ||
-	    		fabs(CV.Z_sC[i][jR]-CV.Z_sC[i][j])>eps || fabs(CV.Z_sC[i][j]-CV.Z_sC[i][jL])>eps)		
+	    	    if (fabs(CV.Z_sC[iR][j]-CV.Z_sC[i][j])>eps2 || fabs(CV.Z_sC[i][j]-CV.Z_sC[iL][j])>eps2 ||
+	    		fabs(CV.Z_sC[i][jR]-CV.Z_sC[i][j])>eps2 || fabs(CV.Z_sC[i][j]-CV.Z_sC[i][jL])>eps2)		
 	    //		SV.idx[i][j] = 1.0;
 	    	    for (k = -HN; k <= HN; k++)
 	    		for (l = -HN; l <= HN; l++) {
 	    		    if (i+k >= 0 && i+k < n_y && j+l >=0 && j+l < n_x)
-	    			for(m=0, q=&SV.RHO_gx; m<sizeof(struct slope_var)/sizeof(double **)-2; m++,q++)
+	    			for(m=0, q=&SV.RHO_gx; m<sizeof(struct slope_var)/sizeof(double **)-4; m++,q++)
 	    			    (*q)[i+k][j+l] = 0.0; 
 	    		}
 	}

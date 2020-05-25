@@ -31,7 +31,7 @@ z_a_2    =0.5;
 u_b_4    =3;
 v_b_4    =3.00499675884535;
 
-rho_b_3  =0.1;
+rho_b_3  =0.9;
 rho_a_3  =1.5;
 u_b_3    =3;
 v_b_3    =3;
@@ -50,7 +50,7 @@ p_b  =np.zeros((line,column));
 
 for j in range(0,line_discon):
     for i in range(0,column_discon):
-        z_a[j,i]  =z_a_1;
+        z_a[j,i]  =z_a_2;
         rho_a[j,i]=rho_a_3;
         u_a[j,i]  =u_a_2;
         v_a[j,i]  =v_a_2;

@@ -103,14 +103,15 @@ struct center_var {
 //slopes at centers of cells (including staggered solid cells)
 struct slope_var {
 	double **Z_sx, **Z_sy;
+        double **RHO_sx, **RHO_sy;
 	double **RHO_gx, **P_gx, **U_gx, **V_gx;
 	double **RHO_gy, **P_gy, **U_gy, **V_gy;
-	double **RHO_sx, **P_sx, **U_sx, **V_sx;
-	double **RHO_sy, **P_sy, **U_sy, **V_sy;
+	double **P_sx, **U_sx, **V_sx;
+	double **P_sy, **U_sy, **V_sy;
 	double **Z_sS_x, **Z_sS_y;
 	double **Q_x, **P_x, **H_x, **eta_g_x;
 	double **Q_y, **P_y, **H_y, **eta_g_y;
-    double **idx; // idx=1.0 说明这里是孔隙率间断
+        double **idx; // idx=1.0 说明这里是孔隙率间断
 };
 //interfacial variables at t_{n+1} in GRP used to calculate slopes
 struct face_var {
