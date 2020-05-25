@@ -59,7 +59,8 @@ read
 #  ./hydrocode.out RP2D_BN2 RP2D_BN2/RP2D_BN2_s 2 2_s free
 #  ./hydrocode.out RP2D_BN3 RP2D_BN3/RP2D_BN3_s 2 1_s free
 #  ./hydrocode.out RP2D_BN3 RP2D_BN3/RP2D_BN3_g 2 1_g free
-  ./hydrocode.out RP2D_BN4 RP2D_BN4/RP2D_BN4_s 2 1_s free
+#  ./hydrocode.out RP2D_BN4 RP2D_BN4/RP2D_BN4_s 2 1_s free
+  ./hydrocode.out RP2D_BN4 RP2D_BN4/RP2D_BN4_s 2 2_s free
 #  ./hydrocode.out RP2D_BN4 RP2D_BN4/RP2D_BN4_g 2 1_g free
 
 

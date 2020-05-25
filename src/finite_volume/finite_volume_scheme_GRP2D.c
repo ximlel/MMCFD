@@ -162,7 +162,7 @@ void finite_volume_scheme_GRP2D(struct flu_var * FV, const struct mesh_var * mv,
 
     const double NS = 0.0;    
     const int BND_X=0, BND_Y=0; //boundary condition: BND=0(free), BND=-1(init_right), BND=1(wall).
-    const double delta_plot_t = 0.001;
+    const double delta_plot_t = 0.05;
     
     for(l = 0; l < (int)config[5] && stop_step != 1; ++l) {
 	start_clock = clock();
@@ -214,7 +214,8 @@ void finite_volume_scheme_GRP2D(struct flu_var * FV, const struct mesh_var * mv,
 	    for(i = 1; i < n_y-1; ++i)
 		for(j = 1; j < n_x-1; ++j) {
 		    ij0 = (i-1)*n_x0+j-1;
-		    FV->RHO[ij0] = C.RHO_sC[i][j]*C.Z_sC[i][j]+C.RHO_gC[i][j]*(1.0-C.Z_sC[i][j]);
+//		    FV->RHO[ij0] = C.RHO_sC[i][j]*C.Z_sC[i][j]+C.RHO_gC[i][j]*(1.0-C.Z_sC[i][j]);
+		    FV->RHO[ij0] = C.RHO_sC[i][j];
 		    FV->U[ij0]   = C.U_sC[i][j];
 		    FV->V[ij0]   = C.V_sC[i][j];
 		    FV->P[ij0]   = C.P_sC[i][j];
