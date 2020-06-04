@@ -6,6 +6,7 @@
 
 #include "../include/var_struc.h"
 #include "../include/tools.h"
+#include <gsl/gsl_linalg.h>
 
 
 //Newton-Rapshon iteration
@@ -186,4 +187,17 @@ void primitive_comp(double * U, struct U_var * U_L, struct U_var * U_R, double z
     U_R->U_u_s  = U_R->U_rho_s*U_R->u_s;
     U_R->U_v_s  = U_R->U_rho_s*U_R->v_s;
     U_R->U_e_s  = U_R->U_rho_s*(U_R->p_s/U_R->rho_s/(gama_s-1.0)+0.5*U_R->u_s*U_R->u_s+0.5*U_R->v_s*U_R->v_s);	
+}
+
+void Lagrangian_with_Multiplier()
+{
+    int N_x = 4;
+    gsl_matrix * D2_xx_L_Ck = gsl_matrix_alloc(N_x,N_x);
+    int i,j;
+    for (i = 0; i < N_x; i++)
+	for (j = 0; j < N_x; j++)
+	    gsl_matrix_set (D2_xx_L_Ck, i, j, 10086);
+    gsl_linalg_cholesky_decomp1(D2_xx_L_Ck);
+
+    gsl_matrix_free(D2_xx_L_Ck);
 }

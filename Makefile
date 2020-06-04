@@ -6,7 +6,7 @@ SRC = ./src
 #Directory of sources
 INCLUDE = -I $(SRC)/include
 #Inclued folder
-LIBS = -lm
+LIBS = -lgsl -lgslcblas -lm
 RM = rm -vf
 #Delete command
 
