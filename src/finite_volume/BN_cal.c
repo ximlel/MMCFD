@@ -6,6 +6,9 @@
 
 #include "../include/var_struc.h"
 #include "../include/tools.h"
+#include <gsl/gsl_vector.h>
+#include <gsl/gsl_matrix.h>
+#include <gsl/gsl_blas.h>
 #include <gsl/gsl_linalg.h>
 
 
@@ -191,13 +194,66 @@ void primitive_comp(double * U, struct U_var * U_L, struct U_var * U_R, double z
 
 void Lagrangian_with_Multiplier()
 {
-    int N_x = 4;
-    gsl_matrix * D2_xx_L_Ck = gsl_matrix_alloc(N_x,N_x);
-    int i,j;
+    const int N_x = 4, N_lam = 3;
+    int i,j,l;
+    gsl_matrix *D2_xx_L_c_k = gsl_matrix_alloc(N_x, N_x);
+    gsl_vector *D_x_L_c_k = gsl_vector_alloc(N_x);
+    gsl_vector *D_L = gsl_vector_alloc(N_x+N_lam);
+    gsl_vector *lambda_k = gsl_vector_alloc(N_lam), *lambda_k_b = gsl_vector_alloc(N_lam);
+    gsl_vector *x_k = gsl_vector_alloc(N_x), *x_k_b = gsl_vector_alloc(N_x);
+    gsl_vector *d_k = gsl_vector_alloc(N_x), *h_k = gsl_vector_alloc(N_x);
+    gsl_permutation *per = gsl_permutation_alloc(N_x);
+    double c_k, vareps_k, omega_k, m_k;
+    int m_idx;
+    double L_c_k, L_c_k_beta, ddot;
+    const double gamma = 0.5, r = 2, beta = 0.5, sigma = 0.25;
+    
     for (i = 0; i < N_x; i++)
 	for (j = 0; j < N_x; j++)
-	    gsl_matrix_set (D2_xx_L_Ck, i, j, 10086);
-    gsl_linalg_cholesky_decomp1(D2_xx_L_Ck);
+	    gsl_matrix_set(D2_xx_L_c_k, i, j, 10086);
+    for (i = 0; i < N_lam; i++)
+	gsl_vector_set(D_x_L_c_k, i, 10086);    
+    gsl_vector_scale(D_x_L_c_k,-1.0);
+    /* Modified Cholesky */
+    gsl_linalg_mcholesky_decomp(D2_xx_L_c_k, per, NULL);
+    gsl_linalg_mcholesky_solve(D2_xx_L_c_k, per, D_x_L_c_k, d_k);
 
-    gsl_matrix_free(D2_xx_L_Ck);
+    gsl_vector_memcpy(x_k_b, x_k);
+    gsl_vector_add(x_k_b, d_k);
+    gsl_vector_memcpy(lambda_k_b, lambda_k);
+    gsl_vector_scale(h_k, c_k);
+    gsl_vector_add(lambda_k_b, h_k);
+    if (pow(gsl_blas_dnrm2(D_L),2) < omega_k) {
+	gsl_vector_memcpy(x_k, x_k_b);
+	gsl_vector_memcpy(lambda_k,lambda_k_b);
+	omega_k = gamma*pow(gsl_blas_dnrm2(D_L),2);
+    }
+    else {
+	m_k = 0;
+	m_idx = 1;
+	while (m_idx) {
+	    gsl_blas_ddot(d_k, D_x_L_c_k, &ddot);
+	    if ((L_c_k - L_c_k_beta) >= -(sigma*pow(beta,m_k)*ddot))
+		m_idx = 0;
+	    else
+		m_k++;
+	    if (m_k>100)
+		printf("m_k is verg big!\n");
+	}
+	if (gsl_blas_dnrm2(D_x_L_c_k) <= vareps_k)
+	    {
+		gsl_vector_add(lambda_k,h_k);
+		vareps_k *= gamma;
+		c_k *= r;
+		omega_k = gamma*pow(gsl_blas_dnrm2(D_L),2);
+	    }
+    }
+    
+    gsl_matrix_free(D2_xx_L_c_k);
+    gsl_vector_free(D_x_L_c_k);
+    gsl_vector_free(D_L);
+    gsl_vector_free(lambda_k); gsl_vector_free(lambda_k_b);
+    gsl_vector_free(x_k); gsl_vector_free(x_k_b);
+    gsl_vector_free(d_k); gsl_vector_free(h_k);
+    gsl_permutation_free(per);
 }
