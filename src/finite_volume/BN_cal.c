@@ -194,14 +194,16 @@ void primitive_comp(double * U, struct U_var * U_L, struct U_var * U_R, double z
 
 void Lagrangian_with_Multiplier()
 {
-    const int N_x = 4, N_lam = 3;
+    const int N_x = 4, N_lmd = 3;
     int i,j,l;
-    gsl_matrix *D2_xx_L_c_k = gsl_matrix_alloc(N_x, N_x);
+    gsl_matrix *D2_xx_L_c_k = gsl_matrix_alloc(N_x, N_x), *H_k = gsl_matrix_alloc(N_x, N_x);
+    gsl_matrix *N_k = gsl_matrix_alloc(N_x, N_lmd);
+    // H_k = D2_xx_L, N_k = D_h
     gsl_vector *D_x_L_c_k = gsl_vector_alloc(N_x);
-    gsl_vector *D_L = gsl_vector_alloc(N_x+N_lam);
-    gsl_vector *lambda_k = gsl_vector_alloc(N_lam), *lambda_k_b = gsl_vector_alloc(N_lam);
+    gsl_vector *D_L = gsl_vector_alloc(N_x+N_lmd);
+    gsl_vector *lambda_k = gsl_vector_alloc(N_lmd), *lambda_k_b = gsl_vector_alloc(N_lmd);
     gsl_vector *x_k = gsl_vector_alloc(N_x), *x_k_b = gsl_vector_alloc(N_x);
-    gsl_vector *d_k = gsl_vector_alloc(N_x), *h_k = gsl_vector_alloc(N_x);
+    gsl_vector *d_k = gsl_vector_alloc(N_x), *h_k = gsl_vector_alloc(N_x), *c_k_h = gsl_vector_alloc(N_x);
     gsl_permutation *per = gsl_permutation_alloc(N_x);
     double c_k, vareps_k, omega_k, m_k;
     int m_idx;
@@ -211,7 +213,7 @@ void Lagrangian_with_Multiplier()
     for (i = 0; i < N_x; i++)
 	for (j = 0; j < N_x; j++)
 	    gsl_matrix_set(D2_xx_L_c_k, i, j, 10086);
-    for (i = 0; i < N_lam; i++)
+    for (i = 0; i < N_lmd; i++)
 	gsl_vector_set(D_x_L_c_k, i, 10086);    
     gsl_vector_scale(D_x_L_c_k,-1.0);
     /* Modified Cholesky */
@@ -221,8 +223,12 @@ void Lagrangian_with_Multiplier()
     gsl_vector_memcpy(x_k_b, x_k);
     gsl_vector_add(x_k_b, d_k);
     gsl_vector_memcpy(lambda_k_b, lambda_k);
-    gsl_vector_scale(h_k, c_k);
-    gsl_vector_add(lambda_k_b, h_k);
+    gsl_vector_memcpy(c_k_h, h_k);
+    gsl_vector_scale(c_k_h, c_k);
+    // gsl_vector_add(lambda_k_b, c_h_k);
+
+
+    
     if (pow(gsl_blas_dnrm2(D_L),2) < omega_k) {
 	gsl_vector_memcpy(x_k, x_k_b);
 	gsl_vector_memcpy(lambda_k,lambda_k_b);
@@ -237,12 +243,12 @@ void Lagrangian_with_Multiplier()
 		m_idx = 0;
 	    else
 		m_k++;
-	    if (m_k>100)
-		printf("m_k is verg big!\n");
+	    if (m_k>50)
+		printf("m_k is bigger than 50!\n");
 	}
 	if (gsl_blas_dnrm2(D_x_L_c_k) <= vareps_k)
 	    {
-		gsl_vector_add(lambda_k,h_k);
+		gsl_vector_add(lambda_k,c_k_h);
 		vareps_k *= gamma;
 		c_k *= r;
 		omega_k = gamma*pow(gsl_blas_dnrm2(D_L),2);
@@ -250,6 +256,8 @@ void Lagrangian_with_Multiplier()
     }
     
     gsl_matrix_free(D2_xx_L_c_k);
+    gsl_matrix_free(H_k);
+    gsl_matrix_free(N_k);
     gsl_vector_free(D_x_L_c_k);
     gsl_vector_free(D_L);
     gsl_vector_free(lambda_k); gsl_vector_free(lambda_k_b);
