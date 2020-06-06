@@ -194,26 +194,34 @@ void primitive_comp(double * U, struct U_var * U_L, struct U_var * U_R, double z
 
 void Lagrangian_with_Multiplier()
 {
-    const int N_x = 4, N_lmd = 3;
+    const int N = 4, M = 3;
     int i,j,l;
-    gsl_matrix *D2_xx_L_c_k = gsl_matrix_alloc(N_x, N_x), *H_k = gsl_matrix_alloc(N_x, N_x);
-    gsl_matrix *N_k = gsl_matrix_alloc(N_x, N_lmd);
-    // H_k = D2_xx_L, N_k = D_h
-    gsl_vector *D_x_L_c_k = gsl_vector_alloc(N_x);
-    gsl_vector *D_L = gsl_vector_alloc(N_x+N_lmd);
-    gsl_vector *lambda_k = gsl_vector_alloc(N_lmd), *lambda_k_b = gsl_vector_alloc(N_lmd);
-    gsl_vector *x_k = gsl_vector_alloc(N_x), *x_k_b = gsl_vector_alloc(N_x);
-    gsl_vector *d_k = gsl_vector_alloc(N_x), *h_k = gsl_vector_alloc(N_x), *c_k_h = gsl_vector_alloc(N_x);
-    gsl_permutation *per = gsl_permutation_alloc(N_x);
+    /* H_k = D2_xx_L, N_k = D_h */
+    gsl_matrix *D2_xx_L_c_k = gsl_matrix_alloc(N, N), *H_k = gsl_matrix_alloc(N, N);
+    gsl_matrix *N_k = gsl_matrix_alloc(N, M);
+    int sign = 0;
+    gsl_matrix *H_c_NN_k_inv = gsl_matrix_alloc(N, N);
+    /* Temp Matrix */
+    gsl_matrix *M_tmp_M_M = gsl_matrix_calloc(M, M), *M_tmp_M_N = gsl_matrix_calloc(M, N);
+    /* Temp Vector*/
+    gsl_vector *V_tmp_M = gsl_vector_calloc(M);
+    
+    gsl_vector *D_x_L_c_k = gsl_vector_alloc(N);
+    gsl_vector *D_L = gsl_vector_alloc(N+M);
+    gsl_vector *D_f = gsl_vector_alloc(N);
+    gsl_vector *lambda_k = gsl_vector_alloc(M), *lambda_k_b = gsl_vector_alloc(M);
+    gsl_vector *x_k = gsl_vector_alloc(N), *x_k_b = gsl_vector_alloc(N);
+    gsl_vector *d_k = gsl_vector_alloc(N), *h_k = gsl_vector_alloc(N), *c_k_h = gsl_vector_alloc(N);
+    gsl_permutation *per = gsl_permutation_alloc(N);
     double c_k, vareps_k, omega_k, m_k;
     int m_idx;
     double L_c_k, L_c_k_beta, ddot;
     const double gamma = 0.5, r = 2, beta = 0.5, sigma = 0.25;
     
-    for (i = 0; i < N_x; i++)
-	for (j = 0; j < N_x; j++)
+    for (i = 0; i < N; i++)
+	for (j = 0; j < N; j++)
 	    gsl_matrix_set(D2_xx_L_c_k, i, j, 10086);
-    for (i = 0; i < N_lmd; i++)
+    for (i = 0; i < M; i++)
 	gsl_vector_set(D_x_L_c_k, i, 10086);    
     gsl_vector_scale(D_x_L_c_k,-1.0);
     /* Modified Cholesky */
@@ -226,8 +234,17 @@ void Lagrangian_with_Multiplier()
     gsl_vector_memcpy(c_k_h, h_k);
     gsl_vector_scale(c_k_h, c_k);
     // gsl_vector_add(lambda_k_b, c_h_k);
-
-
+    gsl_blas_dsyrk(CblasUpper, CblasNoTrans, c_k, N_k, 1.0, H_k);
+    /* Inverse Matrix*/ 
+    gsl_linalg_LU_decomp(H_k, per, &sign);
+    gsl_linalg_LU_invert(H_k, per, H_c_NN_k_inv);
+    gsl_blas_dgemm(CblasTrans, CblasNoTrans, 1.0, N_k, H_c_NN_k_inv, 0.0, M_tmp_M_N);
+    gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, M_tmp_M_N,  N_k, 0.0, M_tmp_M_M);
+    gsl_blas_dgemv(CblasNoTrans, -1.0, M_tmp_M_N, D_f, 0.0, V_tmp_M);
+    gsl_vector_add(V_tmp_M, h_k);
+    gsl_linalg_LU_decomp(M_tmp_M_M, per, &sign);
+    gsl_linalg_LU_solve(M_tmp_M_M, per, V_tmp_M, lambda_k_b);
+    gsl_vector_sub(lambda_k_b, c_k_h);
     
     if (pow(gsl_blas_dnrm2(D_L),2) < omega_k) {
 	gsl_vector_memcpy(x_k, x_k_b);
@@ -258,10 +275,15 @@ void Lagrangian_with_Multiplier()
     gsl_matrix_free(D2_xx_L_c_k);
     gsl_matrix_free(H_k);
     gsl_matrix_free(N_k);
+    gsl_matrix_free(H_c_NN_k_inv);
+    gsl_matrix_free(M_tmp_M_N);
+    gsl_matrix_free(M_tmp_M_M);
+    gsl_vector_free(V_tmp_M);
     gsl_vector_free(D_x_L_c_k);
     gsl_vector_free(D_L);
+    gsl_vector_free(D_f);
     gsl_vector_free(lambda_k); gsl_vector_free(lambda_k_b);
     gsl_vector_free(x_k); gsl_vector_free(x_k_b);
-    gsl_vector_free(d_k); gsl_vector_free(h_k);
+    gsl_vector_free(d_k); gsl_vector_free(h_k); gsl_vector_free(c_k_h);
     gsl_permutation_free(per);
 }
