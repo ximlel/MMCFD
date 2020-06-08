@@ -6,10 +6,6 @@
 
 #include "../include/var_struc.h"
 #include "../include/tools.h"
-#include <gsl/gsl_vector.h>
-#include <gsl/gsl_matrix.h>
-#include <gsl/gsl_blas.h>
-#include <gsl/gsl_linalg.h>
 
 
 //Newton-Rapshon iteration
@@ -94,7 +90,7 @@ void U2RI_cal(const struct U_var * U, struct RI_var * RI)
 }
 
 //compute primitive var
-void primitive_comp(double * U, struct U_var * U_L, struct U_var * U_R, double z_sL, double z_sR, double z_sL_out, double z_sR_out, double area_L, double area_R)
+static void primitive_comp_old(double * U, struct U_var * U_L, struct U_var * U_R, double z_sL, double z_sR, double z_sL_out, double z_sR_out, double area_L, double area_R)
 {   
     double z_gL=1-z_sL;
     double z_gR=1-z_sR;
@@ -192,98 +188,151 @@ void primitive_comp(double * U, struct U_var * U_L, struct U_var * U_R, double z
     U_R->U_e_s  = U_R->U_rho_s*(U_R->p_s/U_R->rho_s/(gama_s-1.0)+0.5*U_R->u_s*U_R->u_s+0.5*U_R->v_s*U_R->v_s);	
 }
 
-void Lagrangian_with_Multiplier()
-{
-    const int N = 4, M = 3;
-    int i,j,l;
-    /* H_k = D2_xx_L, N_k = D_h */
-    gsl_matrix *D2_xx_L_c_k = gsl_matrix_alloc(N, N), *H_k = gsl_matrix_alloc(N, N);
-    gsl_matrix *N_k = gsl_matrix_alloc(N, M);
-    int sign = 0;
-    gsl_matrix *H_c_NN_k_inv = gsl_matrix_alloc(N, N);
-    /* Temp Matrix */
-    gsl_matrix *M_tmp_M_M = gsl_matrix_calloc(M, M), *M_tmp_M_N = gsl_matrix_calloc(M, N);
-    /* Temp Vector*/
-    gsl_vector *V_tmp_M = gsl_vector_calloc(M);
-    
-    gsl_vector *D_x_L_c_k = gsl_vector_alloc(N);
-    gsl_vector *D_L = gsl_vector_alloc(N+M);
-    gsl_vector *D_f = gsl_vector_alloc(N);
-    gsl_vector *lambda_k = gsl_vector_alloc(M), *lambda_k_b = gsl_vector_alloc(M);
-    gsl_vector *x_k = gsl_vector_alloc(N), *x_k_b = gsl_vector_alloc(N);
-    gsl_vector *d_k = gsl_vector_alloc(N), *h_k = gsl_vector_alloc(N), *c_k_h = gsl_vector_alloc(N);
-    gsl_permutation *per = gsl_permutation_alloc(N);
-    double c_k, vareps_k, omega_k, m_k;
-    int m_idx;
-    double L_c_k, L_c_k_beta, ddot;
-    const double gamma = 0.5, r = 2, beta = 0.5, sigma = 0.25;
-    
-    for (i = 0; i < N; i++)
-	for (j = 0; j < N; j++)
-	    gsl_matrix_set(D2_xx_L_c_k, i, j, 10086);
-    for (i = 0; i < M; i++)
-	gsl_vector_set(D_x_L_c_k, i, 10086);    
-    gsl_vector_scale(D_x_L_c_k,-1.0);
-    /* Modified Cholesky */
-    gsl_linalg_mcholesky_decomp(D2_xx_L_c_k, per, NULL);
-    gsl_linalg_mcholesky_solve(D2_xx_L_c_k, per, D_x_L_c_k, d_k);
+static void primitive_comp_bak(double * U, struct U_var * U_L, struct U_var * U_R, double z_sL, double z_sR, double z_sL_out, double z_sR_out, double area_L, double area_R)
+{   
+    double z_gL=1-z_sL;
+    double z_gR=1-z_sR;
+    const double gama_g = config[106], gama_s = config[6];
+    double eps = config[4];
+    double z_s = area_L*z_sL+area_R*z_sR;
+    double z_g = 1.0-z_s;
+    double U1=U[0], U2=U[1], U3=U[3], U4=U[4], U5=U[5], U6=U[7];
+    double rho_gR = U1/z_g;
+    double rho_s  = U4/z_s;
+    double u_s   = U5/U4;
+    U_L->v_g = U[2]/U1;
+    U_R->v_g = U_L->v_g;	
+    U_L->v_s = U[6]/U4;
+    U_R->v_s = U_L->v_s;
+    U_L->z_s = z_sL;
+    U_R->z_s = z_sR;
+    double fun, dfun, x_star;
+    int it_max = 5000, k = 0;
+    double err2 = 1e50;
+    while (k<it_max && err2>eps && fabs(z_sL-z_sR)>eps) {			
+	fun = ((U3 + (-0.1e1) * 0.5e0 * area_R * z_gR * rho_gR * pow((U2 - (U1 + U4) * u_s) / z_gR / rho_gR + u_s, 0.2e1) + (-0.1e1) * 0.5e0 * (-area_R * z_gR * rho_gR + U1) * pow((U2 - (U1 + U4) * u_s) * area_L / (-area_R * z_gR * rho_gR + U1) + u_s, 0.2e1)) * (gama_g - 1) + 0.5e0 * area_R * ((((0.2e1 * area_R * area_R * gama_g + (0.2e1 * area_L - 0.1e1) * gama_g * area_R) * U1 + 0.2e1 * U4 * area_L * area_R * gama_g + 0.2e1 * U4 * area_R * area_R * gama_g) * u_s * u_s + ((-0.1e1) * 0.2e1 * U2 * area_L * area_R * gama_g + (-0.1e1) * 0.2e1 * U2 * area_R * area_R * gama_g) * u_s + 0.2e1 * U3 * area_R * gama_g) * pow(rho_gR, 0.3e1) * pow(z_gR, 0.3e1) + (((((-0.1e1) * 0.1e1 * gama_g + 0.1e1) * area_R * area_R + (-0.1e1) * 0.2e1 * area_R * gama_g + pow(area_L - 0.1e1, 0.2e1) * gama_g + (-0.1e1) * 0.1e1 * area_L * area_L) * U1 * U1 + ((0.2e1 * U4 + (-0.1e1) * 0.2e1 * U4 * gama_g) * area_R * area_R + (-0.1e1) * 0.2e1 * U4 * area_R * gama_g + ((-0.1e1) * 0.2e1 * area_L + 0.2e1 * area_L * area_L) * U4 * gama_g + (-0.1e1) * 0.2e1 * U4 * area_L * area_L) * U1 + (-U4 * U4 * gama_g + U4 * U4) * area_R * area_R + U4 * U4 * area_L * area_L * gama_g + (-0.1e1) * 0.1e1 * U4 * U4 * area_L * area_L) * u_s * u_s + ((((-0.1e1) * 0.2e1 * U2 + 0.2e1 * U2 * gama_g) * area_R * area_R + 0.2e1 * U2 * area_R * gama_g + ((-0.1e1) * 0.2e1 * area_L * area_L + 0.2e1 * area_L) * U2 * gama_g + 0.2e1 * U2 * area_L * area_L) * U1 + ((-0.1e1) * 0.2e1 * U2 * U4 + 0.2e1 * U2 * U4 * gama_g) * area_R * area_R + 0.2e1 * U2 * U4 * area_L * area_L + (-0.1e1) * 0.2e1 * U2 * U4 * area_L * area_L * gama_g) * u_s + (-0.1e1) * 0.2e1 * U1 * U3 * gama_g + (-U2 * U2 * gama_g + U2 * U2) * area_R * area_R + U2 * U2 * area_L * area_L * gama_g + (-0.1e1) * 0.1e1 * U2 * U2 * area_L * area_L) * rho_gR * rho_gR * z_gR * z_gR + (((gama_g - 0.2e1) * area_R * pow(U1, 0.3e1) + (0.2e1 * U4 * gama_g + (-0.1e1) * 0.4e1 * U4) * area_R * U1 * U1 + (U4 * U4 * gama_g + (-0.1e1) * 0.2e1 * U4 * U4) * area_R * U1) * u_s * u_s + (((-0.1e1) * 0.2e1 * U2 * gama_g + 0.4e1 * U2) * area_R * U1 * U1 + (0.4e1 * U2 * U4 + (-0.1e1) * 0.2e1 * U2 * U4 * gama_g) * area_R * U1) * u_s + (U2 * U2 * gama_g + (-0.1e1) * 0.2e1 * U2 * U2) * area_R * U1) * rho_gR * z_gR + (pow(U1, 0.4e1) + 0.2e1 * pow(U1, 0.3e1) * U4 + U1 * U1 * U4 * U4) * u_s * u_s + ((-0.1e1) * 0.2e1 * U1 * U1 * U2 * U4 + (-0.1e1) * 0.2e1 * pow(U1, 0.3e1) * U2) * u_s + U1 * U1 * U2 * U2) * (gama_g - 0.1000000000e1) / z_gR / rho_gR / (-area_R * z_gR * rho_gR + U1) / gama_g / U1) / area_L / z_gL / pow((-area_R * z_gR * rho_gR + U1) / area_L / z_gL, gama_g) + 0.5e0 * ((((0.2e1 * area_R * area_R * gama_g + (0.2e1 * area_L - 0.1e1) * gama_g * area_R) * U1 + 0.2e1 * U4 * area_L * area_R * gama_g + 0.2e1 * U4 * area_R * area_R * gama_g) * u_s * u_s + ((-0.1e1) * 0.2e1 * U2 * area_L * area_R * gama_g + (-0.1e1) * 0.2e1 * U2 * area_R * area_R * gama_g) * u_s + 0.2e1 * U3 * area_R * gama_g) * pow(rho_gR, 0.3e1) * pow(z_gR, 0.3e1) + (((((-0.1e1) * 0.1e1 * gama_g + 0.1e1) * area_R * area_R + (-0.1e1) * 0.2e1 * area_R * gama_g + pow(area_L - 0.1e1, 0.2e1) * gama_g + (-0.1e1) * 0.1e1 * area_L * area_L) * U1 * U1 + ((0.2e1 * U4 + (-0.1e1) * 0.2e1 * U4 * gama_g) * area_R * area_R + (-0.1e1) * 0.2e1 * U4 * area_R * gama_g + ((-0.1e1) * 0.2e1 * area_L + 0.2e1 * area_L * area_L) * U4 * gama_g + (-0.1e1) * 0.2e1 * U4 * area_L * area_L) * U1 + (-U4 * U4 * gama_g + U4 * U4) * area_R * area_R + U4 * U4 * area_L * area_L * gama_g + (-0.1e1) * 0.1e1 * U4 * U4 * area_L * area_L) * u_s * u_s + ((((-0.1e1) * 0.2e1 * U2 + 0.2e1 * U2 * gama_g) * area_R * area_R + 0.2e1 * U2 * area_R * gama_g + ((-0.1e1) * 0.2e1 * area_L * area_L + 0.2e1 * area_L) * U2 * gama_g + 0.2e1 * U2 * area_L * area_L) * U1 + ((-0.1e1) * 0.2e1 * U2 * U4 + 0.2e1 * U2 * U4 * gama_g) * area_R * area_R + 0.2e1 * U2 * U4 * area_L * area_L + (-0.1e1) * 0.2e1 * U2 * U4 * area_L * area_L * gama_g) * u_s + (-0.1e1) * 0.2e1 * U1 * U3 * gama_g + (-U2 * U2 * gama_g + U2 * U2) * area_R * area_R + U2 * U2 * area_L * area_L * gama_g + (-0.1e1) * 0.1e1 * U2 * U2 * area_L * area_L) * rho_gR * rho_gR * z_gR * z_gR + (((gama_g - 0.2e1) * area_R * pow(U1, 0.3e1) + (0.2e1 * U4 * gama_g + (-0.1e1) * 0.4e1 * U4) * area_R * U1 * U1 + (U4 * U4 * gama_g + (-0.1e1) * 0.2e1 * U4 * U4) * area_R * U1) * u_s * u_s + (((-0.1e1) * 0.2e1 * U2 * gama_g + 0.4e1 * U2) * area_R * U1 * U1 + (0.4e1 * U2 * U4 + (-0.1e1) * 0.2e1 * U2 * U4 * gama_g) * area_R * U1) * u_s + (U2 * U2 * gama_g + (-0.1e1) * 0.2e1 * U2 * U2) * area_R * U1) * rho_gR * z_gR + (pow(U1, 0.4e1) + 0.2e1 * pow(U1, 0.3e1) * U4 + U1 * U1 * U4 * U4) * u_s * u_s + ((-0.1e1) * 0.2e1 * U1 * U1 * U2 * U4 + (-0.1e1) * 0.2e1 * pow(U1, 0.3e1) * U2) * u_s + U1 * U1 * U2 * U2) * (gama_g - 0.1000000000e1) * pow(z_gR, -0.2e1) / rho_gR / (-area_R * z_gR * rho_gR + U1) / gama_g / U1 / pow(rho_gR, gama_g);
 
-    gsl_vector_memcpy(x_k_b, x_k);
-    gsl_vector_add(x_k_b, d_k);
-    gsl_vector_memcpy(lambda_k_b, lambda_k);
-    gsl_vector_memcpy(c_k_h, h_k);
-    gsl_vector_scale(c_k_h, c_k);
-    // gsl_vector_add(lambda_k_b, c_h_k);
-    gsl_blas_dsyrk(CblasUpper, CblasNoTrans, c_k, N_k, 1.0, H_k);
-    /* Inverse Matrix*/ 
-    gsl_linalg_LU_decomp(H_k, per, &sign);
-    gsl_linalg_LU_invert(H_k, per, H_c_NN_k_inv);
-    gsl_blas_dgemm(CblasTrans, CblasNoTrans, 1.0, N_k, H_c_NN_k_inv, 0.0, M_tmp_M_N);
-    gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, M_tmp_M_N,  N_k, 0.0, M_tmp_M_M);
-    gsl_blas_dgemv(CblasNoTrans, -1.0, M_tmp_M_N, D_f, 0.0, V_tmp_M);
-    gsl_vector_add(V_tmp_M, h_k);
-    gsl_linalg_LU_decomp(M_tmp_M_M, per, &sign);
-    gsl_linalg_LU_solve(M_tmp_M_M, per, V_tmp_M, lambda_k_b);
-    gsl_vector_sub(lambda_k_b, c_k_h);
-    
-    if (pow(gsl_blas_dnrm2(D_L),2) < omega_k) {
-	gsl_vector_memcpy(x_k, x_k_b);
-	gsl_vector_memcpy(lambda_k,lambda_k_b);
-	omega_k = gamma*pow(gsl_blas_dnrm2(D_L),2);
+	dfun = (((-0.1e1) * 0.5e0 * area_R * z_gR * pow((U2 - (U1 + U4) * u_s) / z_gR / rho_gR + u_s, 0.2e1) + 0.10e1 * area_R * ((U2 - (U1 + U4) * u_s) / z_gR / rho_gR + u_s) * (U2 - (U1 + U4) * u_s) / rho_gR + 0.5e0 * area_R * z_gR * pow((U2 - (U1 + U4) * u_s) * area_L / (-area_R * z_gR * rho_gR + U1) + u_s, 0.2e1) + (-0.1e1) * 0.10e1 * ((U2 - (U1 + U4) * u_s) * area_L / (-area_R * z_gR * rho_gR + U1) + u_s) * (U2 - (U1 + U4) * u_s) * area_L * area_R * z_gR / (-area_R * z_gR * rho_gR + U1)) * (gama_g - 1) + 0.5e0 * area_R * ((0.3e1 * ((0.2e1 * area_R * area_R * gama_g + (0.2e1 * area_L - 0.1e1) * gama_g * area_R) * U1 + 0.2e1 * U4 * area_L * area_R * gama_g + 0.2e1 * U4 * area_R * area_R * gama_g) * u_s * u_s + 0.3e1 * ((-0.1e1) * 0.2e1 * U2 * area_L * area_R * gama_g + (-0.1e1) * 0.2e1 * U2 * area_R * area_R * gama_g) * u_s + 0.3e1 * 0.2e1 * U3 * area_R * gama_g) * rho_gR * rho_gR * pow(z_gR, 0.3e1) + (0.2e1 * ((((-0.1e1) * 0.1e1 * gama_g + 0.1e1) * area_R * area_R + (-0.1e1) * 0.2e1 * area_R * gama_g + pow(area_L - 0.1e1, 0.2e1) * gama_g + (-0.1e1) * 0.1e1 * area_L * area_L) * U1 * U1 + ((0.2e1 * U4 + (-0.1e1) * 0.2e1 * U4 * gama_g) * area_R * area_R + (-0.1e1) * 0.2e1 * U4 * area_R * gama_g + ((-0.1e1) * 0.2e1 * area_L + 0.2e1 * area_L * area_L) * U4 * gama_g + (-0.1e1) * 0.2e1 * U4 * area_L * area_L) * U1 + (-U4 * U4 * gama_g + U4 * U4) * area_R * area_R + U4 * U4 * area_L * area_L * gama_g + (-0.1e1) * 0.1e1 * U4 * U4 * area_L * area_L) * u_s * u_s + 0.2e1 * ((((-0.1e1) * 0.2e1 * U2 + 0.2e1 * U2 * gama_g) * area_R * area_R + 0.2e1 * U2 * area_R * gama_g + ((-0.1e1) * 0.2e1 * area_L * area_L + 0.2e1 * area_L) * U2 * gama_g + 0.2e1 * U2 * area_L * area_L) * U1 + ((-0.1e1) * 0.2e1 * U2 * U4 + 0.2e1 * U2 * U4 * gama_g) * area_R * area_R + 0.2e1 * U2 * U4 * area_L * area_L + (-0.1e1) * 0.2e1 * U2 * U4 * area_L * area_L * gama_g) * u_s + 0.2e1 * (-0.1e1) * 0.2e1 * U1 * U3 * gama_g + 0.2e1 * (-U2 * U2 * gama_g + U2 * U2) * area_R * area_R + 0.2e1 * U2 * U2 * area_L * area_L * gama_g + 0.2e1 * (-0.1e1) * 0.1e1 * U2 * U2 * area_L * area_L) * rho_gR * z_gR * z_gR + (((gama_g - 0.2e1) * area_R * pow(U1, 0.3e1) + (0.2e1 * U4 * gama_g + (-0.1e1) * 0.4e1 * U4) * area_R * U1 * U1 + (U4 * U4 * gama_g + (-0.1e1) * 0.2e1 * U4 * U4) * area_R * U1) * u_s * u_s + (((-0.1e1) * 0.2e1 * U2 * gama_g + 0.4e1 * U2) * area_R * U1 * U1 + (0.4e1 * U2 * U4 + (-0.1e1) * 0.2e1 * U2 * U4 * gama_g) * area_R * U1) * u_s + (U2 * U2 * gama_g + (-0.1e1) * 0.2e1 * U2 * U2) * area_R * U1) * z_gR) * (gama_g - 0.1000000000e1) / z_gR / rho_gR / (-area_R * z_gR * rho_gR + U1) / gama_g / U1 + (-0.1e1) * 0.5e0 * area_R * ((((0.2e1 * area_R * area_R * gama_g + (0.2e1 * area_L - 0.1e1) * gama_g * area_R) * U1 + 0.2e1 * U4 * area_L * area_R * gama_g + 0.2e1 * U4 * area_R * area_R * gama_g) * u_s * u_s + ((-0.1e1) * 0.2e1 * U2 * area_L * area_R * gama_g + (-0.1e1) * 0.2e1 * U2 * area_R * area_R * gama_g) * u_s + 0.2e1 * U3 * area_R * gama_g) * pow(rho_gR, 0.3e1) * pow(z_gR, 0.3e1) + (((((-0.1e1) * 0.1e1 * gama_g + 0.1e1) * area_R * area_R + (-0.1e1) * 0.2e1 * area_R * gama_g + pow(area_L - 0.1e1, 0.2e1) * gama_g + (-0.1e1) * 0.1e1 * area_L * area_L) * U1 * U1 + ((0.2e1 * U4 + (-0.1e1) * 0.2e1 * U4 * gama_g) * area_R * area_R + (-0.1e1) * 0.2e1 * U4 * area_R * gama_g + ((-0.1e1) * 0.2e1 * area_L + 0.2e1 * area_L * area_L) * U4 * gama_g + (-0.1e1) * 0.2e1 * U4 * area_L * area_L) * U1 + (-U4 * U4 * gama_g + U4 * U4) * area_R * area_R + U4 * U4 * area_L * area_L * gama_g + (-0.1e1) * 0.1e1 * U4 * U4 * area_L * area_L) * u_s * u_s + ((((-0.1e1) * 0.2e1 * U2 + 0.2e1 * U2 * gama_g) * area_R * area_R + 0.2e1 * U2 * area_R * gama_g + ((-0.1e1) * 0.2e1 * area_L * area_L + 0.2e1 * area_L) * U2 * gama_g + 0.2e1 * U2 * area_L * area_L) * U1 + ((-0.1e1) * 0.2e1 * U2 * U4 + 0.2e1 * U2 * U4 * gama_g) * area_R * area_R + 0.2e1 * U2 * U4 * area_L * area_L + (-0.1e1) * 0.2e1 * U2 * U4 * area_L * area_L * gama_g) * u_s + (-0.1e1) * 0.2e1 * U1 * U3 * gama_g + (-U2 * U2 * gama_g + U2 * U2) * area_R * area_R + U2 * U2 * area_L * area_L * gama_g + (-0.1e1) * 0.1e1 * U2 * U2 * area_L * area_L) * rho_gR * rho_gR * z_gR * z_gR + (((gama_g - 0.2e1) * area_R * pow(U1, 0.3e1) + (0.2e1 * U4 * gama_g + (-0.1e1) * 0.4e1 * U4) * area_R * U1 * U1 + (U4 * U4 * gama_g + (-0.1e1) * 0.2e1 * U4 * U4) * area_R * U1) * u_s * u_s + (((-0.1e1) * 0.2e1 * U2 * gama_g + 0.4e1 * U2) * area_R * U1 * U1 + (0.4e1 * U2 * U4 + (-0.1e1) * 0.2e1 * U2 * U4 * gama_g) * area_R * U1) * u_s + (U2 * U2 * gama_g + (-0.1e1) * 0.2e1 * U2 * U2) * area_R * U1) * rho_gR * z_gR + (pow(U1, 0.4e1) + 0.2e1 * pow(U1, 0.3e1) * U4 + U1 * U1 * U4 * U4) * u_s * u_s + ((-0.1e1) * 0.2e1 * U1 * U1 * U2 * U4 + (-0.1e1) * 0.2e1 * pow(U1, 0.3e1) * U2) * u_s + U1 * U1 * U2 * U2) * (gama_g - 0.1000000000e1) / z_gR * pow(rho_gR, -0.2e1) / (-area_R * z_gR * rho_gR + U1) / gama_g / U1 + 0.5e0 * area_R * area_R * ((((0.2e1 * area_R * area_R * gama_g + (0.2e1 * area_L - 0.1e1) * gama_g * area_R) * U1 + 0.2e1 * U4 * area_L * area_R * gama_g + 0.2e1 * U4 * area_R * area_R * gama_g) * u_s * u_s + ((-0.1e1) * 0.2e1 * U2 * area_L * area_R * gama_g + (-0.1e1) * 0.2e1 * U2 * area_R * area_R * gama_g) * u_s + 0.2e1 * U3 * area_R * gama_g) * pow(rho_gR, 0.3e1) * pow(z_gR, 0.3e1) + (((((-0.1e1) * 0.1e1 * gama_g + 0.1e1) * area_R * area_R + (-0.1e1) * 0.2e1 * area_R * gama_g + pow(area_L - 0.1e1, 0.2e1) * gama_g + (-0.1e1) * 0.1e1 * area_L * area_L) * U1 * U1 + ((0.2e1 * U4 + (-0.1e1) * 0.2e1 * U4 * gama_g) * area_R * area_R + (-0.1e1) * 0.2e1 * U4 * area_R * gama_g + ((-0.1e1) * 0.2e1 * area_L + 0.2e1 * area_L * area_L) * U4 * gama_g + (-0.1e1) * 0.2e1 * U4 * area_L * area_L) * U1 + (-U4 * U4 * gama_g + U4 * U4) * area_R * area_R + U4 * U4 * area_L * area_L * gama_g + (-0.1e1) * 0.1e1 * U4 * U4 * area_L * area_L) * u_s * u_s + ((((-0.1e1) * 0.2e1 * U2 + 0.2e1 * U2 * gama_g) * area_R * area_R + 0.2e1 * U2 * area_R * gama_g + ((-0.1e1) * 0.2e1 * area_L * area_L + 0.2e1 * area_L) * U2 * gama_g + 0.2e1 * U2 * area_L * area_L) * U1 + ((-0.1e1) * 0.2e1 * U2 * U4 + 0.2e1 * U2 * U4 * gama_g) * area_R * area_R + 0.2e1 * U2 * U4 * area_L * area_L + (-0.1e1) * 0.2e1 * U2 * U4 * area_L * area_L * gama_g) * u_s + (-0.1e1) * 0.2e1 * U1 * U3 * gama_g + (-U2 * U2 * gama_g + U2 * U2) * area_R * area_R + U2 * U2 * area_L * area_L * gama_g + (-0.1e1) * 0.1e1 * U2 * U2 * area_L * area_L) * rho_gR * rho_gR * z_gR * z_gR + (((gama_g - 0.2e1) * area_R * pow(U1, 0.3e1) + (0.2e1 * U4 * gama_g + (-0.1e1) * 0.4e1 * U4) * area_R * U1 * U1 + (U4 * U4 * gama_g + (-0.1e1) * 0.2e1 * U4 * U4) * area_R * U1) * u_s * u_s + (((-0.1e1) * 0.2e1 * U2 * gama_g + 0.4e1 * U2) * area_R * U1 * U1 + (0.4e1 * U2 * U4 + (-0.1e1) * 0.2e1 * U2 * U4 * gama_g) * area_R * U1) * u_s + (U2 * U2 * gama_g + (-0.1e1) * 0.2e1 * U2 * U2) * area_R * U1) * rho_gR * z_gR + (pow(U1, 0.4e1) + 0.2e1 * pow(U1, 0.3e1) * U4 + U1 * U1 * U4 * U4) * u_s * u_s + ((-0.1e1) * 0.2e1 * U1 * U1 * U2 * U4 + (-0.1e1) * 0.2e1 * pow(U1, 0.3e1) * U2) * u_s + U1 * U1 * U2 * U2) * (gama_g - 0.1000000000e1) / rho_gR * pow(-area_R * z_gR * rho_gR + U1, -0.2e1) / gama_g / U1) / area_L / z_gL / pow((-area_R * z_gR * rho_gR + U1) / area_L / z_gL, gama_g) + ((U3 + (-0.1e1) * 0.5e0 * area_R * z_gR * rho_gR * pow((U2 - (U1 + U4) * u_s) / z_gR / rho_gR + u_s, 0.2e1) + (-0.1e1) * 0.5e0 * (-area_R * z_gR * rho_gR + U1) * pow((U2 - (U1 + U4) * u_s) * area_L / (-area_R * z_gR * rho_gR + U1) + u_s, 0.2e1)) * (gama_g - 1) + 0.5e0 * area_R * ((((0.2e1 * area_R * area_R * gama_g + (0.2e1 * area_L - 0.1e1) * gama_g * area_R) * U1 + 0.2e1 * U4 * area_L * area_R * gama_g + 0.2e1 * U4 * area_R * area_R * gama_g) * u_s * u_s + ((-0.1e1) * 0.2e1 * U2 * area_L * area_R * gama_g + (-0.1e1) * 0.2e1 * U2 * area_R * area_R * gama_g) * u_s + 0.2e1 * U3 * area_R * gama_g) * pow(rho_gR, 0.3e1) * pow(z_gR, 0.3e1) + (((((-0.1e1) * 0.1e1 * gama_g + 0.1e1) * area_R * area_R + (-0.1e1) * 0.2e1 * area_R * gama_g + pow(area_L - 0.1e1, 0.2e1) * gama_g + (-0.1e1) * 0.1e1 * area_L * area_L) * U1 * U1 + ((0.2e1 * U4 + (-0.1e1) * 0.2e1 * U4 * gama_g) * area_R * area_R + (-0.1e1) * 0.2e1 * U4 * area_R * gama_g + ((-0.1e1) * 0.2e1 * area_L + 0.2e1 * area_L * area_L) * U4 * gama_g + (-0.1e1) * 0.2e1 * U4 * area_L * area_L) * U1 + (-U4 * U4 * gama_g + U4 * U4) * area_R * area_R + U4 * U4 * area_L * area_L * gama_g + (-0.1e1) * 0.1e1 * U4 * U4 * area_L * area_L) * u_s * u_s + ((((-0.1e1) * 0.2e1 * U2 + 0.2e1 * U2 * gama_g) * area_R * area_R + 0.2e1 * U2 * area_R * gama_g + ((-0.1e1) * 0.2e1 * area_L * area_L + 0.2e1 * area_L) * U2 * gama_g + 0.2e1 * U2 * area_L * area_L) * U1 + ((-0.1e1) * 0.2e1 * U2 * U4 + 0.2e1 * U2 * U4 * gama_g) * area_R * area_R + 0.2e1 * U2 * U4 * area_L * area_L + (-0.1e1) * 0.2e1 * U2 * U4 * area_L * area_L * gama_g) * u_s + (-0.1e1) * 0.2e1 * U1 * U3 * gama_g + (-U2 * U2 * gama_g + U2 * U2) * area_R * area_R + U2 * U2 * area_L * area_L * gama_g + (-0.1e1) * 0.1e1 * U2 * U2 * area_L * area_L) * rho_gR * rho_gR * z_gR * z_gR + (((gama_g - 0.2e1) * area_R * pow(U1, 0.3e1) + (0.2e1 * U4 * gama_g + (-0.1e1) * 0.4e1 * U4) * area_R * U1 * U1 + (U4 * U4 * gama_g + (-0.1e1) * 0.2e1 * U4 * U4) * area_R * U1) * u_s * u_s + (((-0.1e1) * 0.2e1 * U2 * gama_g + 0.4e1 * U2) * area_R * U1 * U1 + (0.4e1 * U2 * U4 + (-0.1e1) * 0.2e1 * U2 * U4 * gama_g) * area_R * U1) * u_s + (U2 * U2 * gama_g + (-0.1e1) * 0.2e1 * U2 * U2) * area_R * U1) * rho_gR * z_gR + (pow(U1, 0.4e1) + 0.2e1 * pow(U1, 0.3e1) * U4 + U1 * U1 * U4 * U4) * u_s * u_s + ((-0.1e1) * 0.2e1 * U1 * U1 * U2 * U4 + (-0.1e1) * 0.2e1 * pow(U1, 0.3e1) * U2) * u_s + U1 * U1 * U2 * U2) * (gama_g - 0.1000000000e1) / z_gR / rho_gR / (-area_R * z_gR * rho_gR + U1) / gama_g / U1) * gama_g * area_R * z_gR / area_L / z_gL / pow((-area_R * z_gR * rho_gR + U1) / area_L / z_gL, gama_g) / (-area_R * z_gR * rho_gR + U1) + 0.5e0 * ((0.3e1 * ((0.2e1 * area_R * area_R * gama_g + (0.2e1 * area_L - 0.1e1) * gama_g * area_R) * U1 + 0.2e1 * U4 * area_L * area_R * gama_g + 0.2e1 * U4 * area_R * area_R * gama_g) * u_s * u_s + 0.3e1 * ((-0.1e1) * 0.2e1 * U2 * area_L * area_R * gama_g + (-0.1e1) * 0.2e1 * U2 * area_R * area_R * gama_g) * u_s + 0.3e1 * 0.2e1 * U3 * area_R * gama_g) * rho_gR * rho_gR * pow(z_gR, 0.3e1) + (0.2e1 * ((((-0.1e1) * 0.1e1 * gama_g + 0.1e1) * area_R * area_R + (-0.1e1) * 0.2e1 * area_R * gama_g + pow(area_L - 0.1e1, 0.2e1) * gama_g + (-0.1e1) * 0.1e1 * area_L * area_L) * U1 * U1 + ((0.2e1 * U4 + (-0.1e1) * 0.2e1 * U4 * gama_g) * area_R * area_R + (-0.1e1) * 0.2e1 * U4 * area_R * gama_g + ((-0.1e1) * 0.2e1 * area_L + 0.2e1 * area_L * area_L) * U4 * gama_g + (-0.1e1) * 0.2e1 * U4 * area_L * area_L) * U1 + (-U4 * U4 * gama_g + U4 * U4) * area_R * area_R + U4 * U4 * area_L * area_L * gama_g + (-0.1e1) * 0.1e1 * U4 * U4 * area_L * area_L) * u_s * u_s + 0.2e1 * ((((-0.1e1) * 0.2e1 * U2 + 0.2e1 * U2 * gama_g) * area_R * area_R + 0.2e1 * U2 * area_R * gama_g + ((-0.1e1) * 0.2e1 * area_L * area_L + 0.2e1 * area_L) * U2 * gama_g + 0.2e1 * U2 * area_L * area_L) * U1 + ((-0.1e1) * 0.2e1 * U2 * U4 + 0.2e1 * U2 * U4 * gama_g) * area_R * area_R + 0.2e1 * U2 * U4 * area_L * area_L + (-0.1e1) * 0.2e1 * U2 * U4 * area_L * area_L * gama_g) * u_s + 0.2e1 * (-0.1e1) * 0.2e1 * U1 * U3 * gama_g + 0.2e1 * (-U2 * U2 * gama_g + U2 * U2) * area_R * area_R + 0.2e1 * U2 * U2 * area_L * area_L * gama_g + 0.2e1 * (-0.1e1) * 0.1e1 * U2 * U2 * area_L * area_L) * rho_gR * z_gR * z_gR + (((gama_g - 0.2e1) * area_R * pow(U1, 0.3e1) + (0.2e1 * U4 * gama_g + (-0.1e1) * 0.4e1 * U4) * area_R * U1 * U1 + (U4 * U4 * gama_g + (-0.1e1) * 0.2e1 * U4 * U4) * area_R * U1) * u_s * u_s + (((-0.1e1) * 0.2e1 * U2 * gama_g + 0.4e1 * U2) * area_R * U1 * U1 + (0.4e1 * U2 * U4 + (-0.1e1) * 0.2e1 * U2 * U4 * gama_g) * area_R * U1) * u_s + (U2 * U2 * gama_g + (-0.1e1) * 0.2e1 * U2 * U2) * area_R * U1) * z_gR) * (gama_g - 0.1000000000e1) * pow(z_gR, -0.2e1) / rho_gR / (-area_R * z_gR * rho_gR + U1) / gama_g / U1 / pow(rho_gR, gama_g) + (-0.1e1) * 0.5e0 * ((((0.2e1 * area_R * area_R * gama_g + (0.2e1 * area_L - 0.1e1) * gama_g * area_R) * U1 + 0.2e1 * U4 * area_L * area_R * gama_g + 0.2e1 * U4 * area_R * area_R * gama_g) * u_s * u_s + ((-0.1e1) * 0.2e1 * U2 * area_L * area_R * gama_g + (-0.1e1) * 0.2e1 * U2 * area_R * area_R * gama_g) * u_s + 0.2e1 * U3 * area_R * gama_g) * pow(rho_gR, 0.3e1) * pow(z_gR, 0.3e1) + (((((-0.1e1) * 0.1e1 * gama_g + 0.1e1) * area_R * area_R + (-0.1e1) * 0.2e1 * area_R * gama_g + pow(area_L - 0.1e1, 0.2e1) * gama_g + (-0.1e1) * 0.1e1 * area_L * area_L) * U1 * U1 + ((0.2e1 * U4 + (-0.1e1) * 0.2e1 * U4 * gama_g) * area_R * area_R + (-0.1e1) * 0.2e1 * U4 * area_R * gama_g + ((-0.1e1) * 0.2e1 * area_L + 0.2e1 * area_L * area_L) * U4 * gama_g + (-0.1e1) * 0.2e1 * U4 * area_L * area_L) * U1 + (-U4 * U4 * gama_g + U4 * U4) * area_R * area_R + U4 * U4 * area_L * area_L * gama_g + (-0.1e1) * 0.1e1 * U4 * U4 * area_L * area_L) * u_s * u_s + ((((-0.1e1) * 0.2e1 * U2 + 0.2e1 * U2 * gama_g) * area_R * area_R + 0.2e1 * U2 * area_R * gama_g + ((-0.1e1) * 0.2e1 * area_L * area_L + 0.2e1 * area_L) * U2 * gama_g + 0.2e1 * U2 * area_L * area_L) * U1 + ((-0.1e1) * 0.2e1 * U2 * U4 + 0.2e1 * U2 * U4 * gama_g) * area_R * area_R + 0.2e1 * U2 * U4 * area_L * area_L + (-0.1e1) * 0.2e1 * U2 * U4 * area_L * area_L * gama_g) * u_s + (-0.1e1) * 0.2e1 * U1 * U3 * gama_g + (-U2 * U2 * gama_g + U2 * U2) * area_R * area_R + U2 * U2 * area_L * area_L * gama_g + (-0.1e1) * 0.1e1 * U2 * U2 * area_L * area_L) * rho_gR * rho_gR * z_gR * z_gR + (((gama_g - 0.2e1) * area_R * pow(U1, 0.3e1) + (0.2e1 * U4 * gama_g + (-0.1e1) * 0.4e1 * U4) * area_R * U1 * U1 + (U4 * U4 * gama_g + (-0.1e1) * 0.2e1 * U4 * U4) * area_R * U1) * u_s * u_s + (((-0.1e1) * 0.2e1 * U2 * gama_g + 0.4e1 * U2) * area_R * U1 * U1 + (0.4e1 * U2 * U4 + (-0.1e1) * 0.2e1 * U2 * U4 * gama_g) * area_R * U1) * u_s + (U2 * U2 * gama_g + (-0.1e1) * 0.2e1 * U2 * U2) * area_R * U1) * rho_gR * z_gR + (pow(U1, 0.4e1) + 0.2e1 * pow(U1, 0.3e1) * U4 + U1 * U1 * U4 * U4) * u_s * u_s + ((-0.1e1) * 0.2e1 * U1 * U1 * U2 * U4 + (-0.1e1) * 0.2e1 * pow(U1, 0.3e1) * U2) * u_s + U1 * U1 * U2 * U2) * (gama_g - 0.1000000000e1) * pow(z_gR, -0.2e1) * pow(rho_gR, -0.2e1) / (-area_R * z_gR * rho_gR + U1) / gama_g / U1 / pow(rho_gR, gama_g) + 0.5e0 * ((((0.2e1 * area_R * area_R * gama_g + (0.2e1 * area_L - 0.1e1) * gama_g * area_R) * U1 + 0.2e1 * U4 * area_L * area_R * gama_g + 0.2e1 * U4 * area_R * area_R * gama_g) * u_s * u_s + ((-0.1e1) * 0.2e1 * U2 * area_L * area_R * gama_g + (-0.1e1) * 0.2e1 * U2 * area_R * area_R * gama_g) * u_s + 0.2e1 * U3 * area_R * gama_g) * pow(rho_gR, 0.3e1) * pow(z_gR, 0.3e1) + (((((-0.1e1) * 0.1e1 * gama_g + 0.1e1) * area_R * area_R + (-0.1e1) * 0.2e1 * area_R * gama_g + pow(area_L - 0.1e1, 0.2e1) * gama_g + (-0.1e1) * 0.1e1 * area_L * area_L) * U1 * U1 + ((0.2e1 * U4 + (-0.1e1) * 0.2e1 * U4 * gama_g) * area_R * area_R + (-0.1e1) * 0.2e1 * U4 * area_R * gama_g + ((-0.1e1) * 0.2e1 * area_L + 0.2e1 * area_L * area_L) * U4 * gama_g + (-0.1e1) * 0.2e1 * U4 * area_L * area_L) * U1 + (-U4 * U4 * gama_g + U4 * U4) * area_R * area_R + U4 * U4 * area_L * area_L * gama_g + (-0.1e1) * 0.1e1 * U4 * U4 * area_L * area_L) * u_s * u_s + ((((-0.1e1) * 0.2e1 * U2 + 0.2e1 * U2 * gama_g) * area_R * area_R + 0.2e1 * U2 * area_R * gama_g + ((-0.1e1) * 0.2e1 * area_L * area_L + 0.2e1 * area_L) * U2 * gama_g + 0.2e1 * U2 * area_L * area_L) * U1 + ((-0.1e1) * 0.2e1 * U2 * U4 + 0.2e1 * U2 * U4 * gama_g) * area_R * area_R + 0.2e1 * U2 * U4 * area_L * area_L + (-0.1e1) * 0.2e1 * U2 * U4 * area_L * area_L * gama_g) * u_s + (-0.1e1) * 0.2e1 * U1 * U3 * gama_g + (-U2 * U2 * gama_g + U2 * U2) * area_R * area_R + U2 * U2 * area_L * area_L * gama_g + (-0.1e1) * 0.1e1 * U2 * U2 * area_L * area_L) * rho_gR * rho_gR * z_gR * z_gR + (((gama_g - 0.2e1) * area_R * pow(U1, 0.3e1) + (0.2e1 * U4 * gama_g + (-0.1e1) * 0.4e1 * U4) * area_R * U1 * U1 + (U4 * U4 * gama_g + (-0.1e1) * 0.2e1 * U4 * U4) * area_R * U1) * u_s * u_s + (((-0.1e1) * 0.2e1 * U2 * gama_g + 0.4e1 * U2) * area_R * U1 * U1 + (0.4e1 * U2 * U4 + (-0.1e1) * 0.2e1 * U2 * U4 * gama_g) * area_R * U1) * u_s + (U2 * U2 * gama_g + (-0.1e1) * 0.2e1 * U2 * U2) * area_R * U1) * rho_gR * z_gR + (pow(U1, 0.4e1) + 0.2e1 * pow(U1, 0.3e1) * U4 + U1 * U1 * U4 * U4) * u_s * u_s + ((-0.1e1) * 0.2e1 * U1 * U1 * U2 * U4 + (-0.1e1) * 0.2e1 * pow(U1, 0.3e1) * U2) * u_s + U1 * U1 * U2 * U2) * (gama_g - 0.1000000000e1) * area_R / z_gR / rho_gR * pow(-area_R * z_gR * rho_gR + U1, -0.2e1) / gama_g / U1 / pow(rho_gR, gama_g) + (-0.1e1) * 0.5e0 * ((((0.2e1 * area_R * area_R * gama_g + (0.2e1 * area_L - 0.1e1) * gama_g * area_R) * U1 + 0.2e1 * U4 * area_L * area_R * gama_g + 0.2e1 * U4 * area_R * area_R * gama_g) * u_s * u_s + ((-0.1e1) * 0.2e1 * U2 * area_L * area_R * gama_g + (-0.1e1) * 0.2e1 * U2 * area_R * area_R * gama_g) * u_s + 0.2e1 * U3 * area_R * gama_g) * pow(rho_gR, 0.3e1) * pow(z_gR, 0.3e1) + (((((-0.1e1) * 0.1e1 * gama_g + 0.1e1) * area_R * area_R + (-0.1e1) * 0.2e1 * area_R * gama_g + pow(area_L - 0.1e1, 0.2e1) * gama_g + (-0.1e1) * 0.1e1 * area_L * area_L) * U1 * U1 + ((0.2e1 * U4 + (-0.1e1) * 0.2e1 * U4 * gama_g) * area_R * area_R + (-0.1e1) * 0.2e1 * U4 * area_R * gama_g + ((-0.1e1) * 0.2e1 * area_L + 0.2e1 * area_L * area_L) * U4 * gama_g + (-0.1e1) * 0.2e1 * U4 * area_L * area_L) * U1 + (-U4 * U4 * gama_g + U4 * U4) * area_R * area_R + U4 * U4 * area_L * area_L * gama_g + (-0.1e1) * 0.1e1 * U4 * U4 * area_L * area_L) * u_s * u_s + ((((-0.1e1) * 0.2e1 * U2 + 0.2e1 * U2 * gama_g) * area_R * area_R + 0.2e1 * U2 * area_R * gama_g + ((-0.1e1) * 0.2e1 * area_L * area_L + 0.2e1 * area_L) * U2 * gama_g + 0.2e1 * U2 * area_L * area_L) * U1 + ((-0.1e1) * 0.2e1 * U2 * U4 + 0.2e1 * U2 * U4 * gama_g) * area_R * area_R + 0.2e1 * U2 * U4 * area_L * area_L + (-0.1e1) * 0.2e1 * U2 * U4 * area_L * area_L * gama_g) * u_s + (-0.1e1) * 0.2e1 * U1 * U3 * gama_g + (-U2 * U2 * gama_g + U2 * U2) * area_R * area_R + U2 * U2 * area_L * area_L * gama_g + (-0.1e1) * 0.1e1 * U2 * U2 * area_L * area_L) * rho_gR * rho_gR * z_gR * z_gR + (((gama_g - 0.2e1) * area_R * pow(U1, 0.3e1) + (0.2e1 * U4 * gama_g + (-0.1e1) * 0.4e1 * U4) * area_R * U1 * U1 + (U4 * U4 * gama_g + (-0.1e1) * 0.2e1 * U4 * U4) * area_R * U1) * u_s * u_s + (((-0.1e1) * 0.2e1 * U2 * gama_g + 0.4e1 * U2) * area_R * U1 * U1 + (0.4e1 * U2 * U4 + (-0.1e1) * 0.2e1 * U2 * U4 * gama_g) * area_R * U1) * u_s + (U2 * U2 * gama_g + (-0.1e1) * 0.2e1 * U2 * U2) * area_R * U1) * rho_gR * z_gR + (pow(U1, 0.4e1) + 0.2e1 * pow(U1, 0.3e1) * U4 + U1 * U1 * U4 * U4) * u_s * u_s + ((-0.1e1) * 0.2e1 * U1 * U1 * U2 * U4 + (-0.1e1) * 0.2e1 * pow(U1, 0.3e1) * U2) * u_s + U1 * U1 * U2 * U2) * (gama_g - 0.1000000000e1) * pow(z_gR, -0.2e1) * pow(rho_gR, -0.2e1) / (-area_R * z_gR * rho_gR + U1) / U1 / pow(rho_gR, gama_g);
+
+	NewtonRapshon(&rho_gR, &err2, fun, dfun, eps);
+	//rho_gR=fmax(rho_gR,eps);
+	k=k+1;
     }
-    else {
-	m_k = 0;
-	m_idx = 1;
-	while (m_idx) {
-	    gsl_blas_ddot(d_k, D_x_L_c_k, &ddot);
-	    if ((L_c_k - L_c_k_beta) >= -(sigma*pow(beta,m_k)*ddot))
-		m_idx = 0;
-	    else
-		m_k++;
-	    if (m_k>50)
-		printf("m_k is bigger than 50!\n");
-	}
-	if (gsl_blas_dnrm2(D_x_L_c_k) <= vareps_k)
-	    {
-		gsl_vector_add(lambda_k,c_k_h);
-		vareps_k *= gamma;
-		c_k *= r;
-		omega_k = gamma*pow(gsl_blas_dnrm2(D_L),2);
-	    }
-    }
+    if (k>=it_max)
+        printf("\nRIeq_err:%lf! %lf, %lf, %lf\n",err2,z_sL,z_sR,rho_gR);
+        
+    U_R->rho_g = rho_gR;
+    U_L->rho_g = (U1-area_R*z_gR*rho_gR)/area_L/z_gL;
+    U_R->u_g = (U2-(U1+U4)*u_s)/(z_gR*rho_gR)+u_s;
+    U_L->u_g = (U2-(U1+U4)*u_s)/(U1-area_R*z_gR*rho_gR)*area_L+u_s;
+    U_R->p_g = (-0.1e1) * 0.5e0 * ((((0.2e1 * area_R * area_R * gama_g + (0.2e1 * area_L - 0.1e1) * gama_g * area_R) * U1 + 0.2e1 * U4 * area_L * area_R * gama_g + 0.2e1 * U4 * area_R * area_R * gama_g) * u_s * u_s + ((-0.1e1) * 0.2e1 * U2 * area_L * area_R * gama_g + (-0.1e1) * 0.2e1 * U2 * area_R * area_R * gama_g) * u_s + 0.2e1 * U3 * area_R * gama_g) * pow(rho_gR, 0.3e1) * pow(z_gR, 0.3e1) + (((((-0.1e1) * 0.1e1 * gama_g + 0.1e1) * area_R * area_R + (-0.1e1) * 0.2e1 * area_R * gama_g + pow(area_L - 0.1e1, 0.2e1) * gama_g + (-0.1e1) * 0.1e1 * area_L * area_L) * U1 * U1 + ((0.2e1 * U4 + (-0.1e1) * 0.2e1 * U4 * gama_g) * area_R * area_R + (-0.1e1) * 0.2e1 * U4 * area_R * gama_g + ((-0.1e1) * 0.2e1 * area_L + 0.2e1 * area_L * area_L) * U4 * gama_g + (-0.1e1) * 0.2e1 * U4 * area_L * area_L) * U1 + (-U4 * U4 * gama_g + U4 * U4) * area_R * area_R + U4 * U4 * area_L * area_L * gama_g + (-0.1e1) * 0.1e1 * U4 * U4 * area_L * area_L) * u_s * u_s + ((((-0.1e1) * 0.2e1 * U2 + 0.2e1 * U2 * gama_g) * area_R * area_R + 0.2e1 * U2 * area_R * gama_g + ((-0.1e1) * 0.2e1 * area_L * area_L + 0.2e1 * area_L) * U2 * gama_g + 0.2e1 * U2 * area_L * area_L) * U1 + ((-0.1e1) * 0.2e1 * U2 * U4 + 0.2e1 * U2 * U4 * gama_g) * area_R * area_R + 0.2e1 * U2 * U4 * area_L * area_L + (-0.1e1) * 0.2e1 * U2 * U4 * area_L * area_L * gama_g) * u_s + (-0.1e1) * 0.2e1 * U1 * U3 * gama_g + (-U2 * U2 * gama_g + U2 * U2) * area_R * area_R + U2 * U2 * area_L * area_L * gama_g + (-0.1e1) * 0.1e1 * U2 * U2 * area_L * area_L) * rho_gR * rho_gR * z_gR * z_gR + (((gama_g - 0.2e1) * area_R * pow(U1, 0.3e1) + (0.2e1 * U4 * gama_g + (-0.1e1) * 0.4e1 * U4) * area_R * U1 * U1 + (U4 * U4 * gama_g + (-0.1e1) * 0.2e1 * U4 * U4) * area_R * U1) * u_s * u_s + (((-0.1e1) * 0.2e1 * U2 * gama_g + 0.4e1 * U2) * area_R * U1 * U1 + (0.4e1 * U2 * U4 + (-0.1e1) * 0.2e1 * U2 * U4 * gama_g) * area_R * U1) * u_s + (U2 * U2 * gama_g + (-0.1e1) * 0.2e1 * U2 * U2) * area_R * U1) * rho_gR * z_gR + (pow(U1, 0.4e1) + 0.2e1 * pow(U1, 0.3e1) * U4 + U1 * U1 * U4 * U4) * u_s * u_s + ((-0.1e1) * 0.2e1 * U1 * U1 * U2 * U4 + (-0.1e1) * 0.2e1 * pow(U1, 0.3e1) * U2) * u_s + U1 * U1 * U2 * U2) * (gama_g - 0.1000000000e1) * pow(z_gR, -0.2e1) / rho_gR / (-area_R * z_gR * rho_gR + U1) / gama_g / U1;
+    U_L->p_g = ((U3 + (-0.1e1) * 0.5e0 * area_R * z_gR * rho_gR * pow((U2 - (U1 + U4) * u_s) / z_gR / rho_gR + u_s, 0.2e1) + (-0.1e1) * 0.5e0 * (-area_R * z_gR * rho_gR + U1) * pow((U2 - (U1 + U4) * u_s) * area_L / (-area_R * z_gR * rho_gR + U1) + u_s, 0.2e1)) * (gama_g - 1) - area_R * z_gR * U_R->p_g) / area_L / z_gL;
+    U_R->p_s = (((z_gL * U_L->rho_g + (-0.1e1) * 0.1e1 * z_gR * rho_gR) * u_s * u_s + ((-0.1e1) * 0.2e1 * U_L->rho_g * z_gL * U_L->u_g + 0.2e1 * rho_gR * z_gR * U_R->u_g) * u_s + (U_L->rho_g * U_L->u_g * U_L->u_g + U_L->p_g) * z_gL + ((-0.1e1) * 0.1e1 * rho_gR * U_R->u_g * U_R->u_g + (-0.1e1) * 0.1e1 * U_R->p_g) * z_gR) * area_L + ((-0.1e1) * 0.5e0 * gama_s * rho_s + 0.5e0 * rho_s) * u_s * u_s + U6 * gama_s + (-0.1e1) * 0.1e1 * U6) / z_sR / (area_L + area_R);
+    U_L->p_s = ((U6 + (-0.1e1) * 0.5e0 * rho_s * u_s * u_s) * (gama_s - 1) - area_R * (((z_gL * U_L->rho_g + (-0.1e1) * 0.1e1 * z_gR * rho_gR) * u_s * u_s + ((-0.1e1) * 0.2e1 * U_L->rho_g * z_gL * U_L->u_g + 0.2e1 * rho_gR * z_gR * U_R->u_g) * u_s + (U_L->rho_g * U_L->u_g * U_L->u_g + U_L->p_g) * z_gL + ((-0.1e1) * 0.1e1 * rho_gR * U_R->u_g * U_R->u_g + (-0.1e1) * 0.1e1 * U_R->p_g) * z_gR) * area_L + ((-0.1e1) * 0.5e0 * gama_s * rho_s + 0.5e0 * rho_s) * u_s * u_s + U6 * gama_s + (-0.1e1) * 0.1e1 * U6) / (area_L + area_R)) / area_L / z_sL;
+
+    U_L->rho_s= rho_s;
+    U_R->rho_s= rho_s;
+    U_L->u_s = u_s;
+    U_R->u_s = u_s;
     
-    gsl_matrix_free(D2_xx_L_c_k);
-    gsl_matrix_free(H_k);
-    gsl_matrix_free(N_k);
-    gsl_matrix_free(H_c_NN_k_inv);
-    gsl_matrix_free(M_tmp_M_N);
-    gsl_matrix_free(M_tmp_M_M);
-    gsl_vector_free(V_tmp_M);
-    gsl_vector_free(D_x_L_c_k);
-    gsl_vector_free(D_L);
-    gsl_vector_free(D_f);
-    gsl_vector_free(lambda_k); gsl_vector_free(lambda_k_b);
-    gsl_vector_free(x_k); gsl_vector_free(x_k_b);
-    gsl_vector_free(d_k); gsl_vector_free(h_k); gsl_vector_free(c_k_h);
-    gsl_permutation_free(per);
+    struct RI_var RI_L, RI_R;
+    U2RI_cal(U_L, &RI_L);
+    RI2U_cal(U_L, &RI_L, z_sL_out, U_L->rho_g);
+    U2RI_cal(U_R, &RI_R);
+    RI2U_cal(U_R, &RI_R, z_sR_out, U_R->rho_g);
+    
+    U_L->U_rho_g = (1.0-z_sL_out)*U_L->rho_g;
+    U_L->U_u_g  = U_L->U_rho_g*U_L->u_g;
+    U_L->U_v_g  = U_L->U_rho_g*U_L->v_g;
+    U_L->U_e_g  = U_L->U_rho_g*(U_L->p_g/U_L->rho_g/(gama_g-1.0)+0.5*U_L->u_g*U_L->u_g+0.5*U_L->v_g*U_L->v_g);
+    U_L->U_rho_s = z_sL_out*U_L->rho_s;
+    U_L->U_u_s  = U_L->U_rho_s*U_L->u_s;
+    U_L->U_v_s  = U_L->U_rho_s*U_L->v_s;
+    U_L->U_e_s  = U_L->U_rho_s*(U_L->p_s/U_L->rho_s/(gama_s-1.0)+0.5*U_L->u_s*U_L->u_s+0.5*U_L->v_s*U_L->v_s);
+    U_R->U_rho_g = (1.0-z_sR_out)*U_R->rho_g;
+    U_R->U_u_g  = U_R->U_rho_g*U_R->u_g;
+    U_R->U_v_g  = U_R->U_rho_g*U_R->v_g;
+    U_R->U_e_g  = U_R->U_rho_g*(U_R->p_g/U_R->rho_g/(gama_g-1.0)+0.5*U_R->u_g*U_R->u_g+0.5*U_R->v_g*U_R->v_g);
+    U_R->U_rho_s = z_sR_out*U_R->rho_s;
+    U_R->U_u_s  = U_R->U_rho_s*U_R->u_s;
+    U_R->U_v_s  = U_R->U_rho_s*U_R->v_s;
+    U_R->U_e_s  = U_R->U_rho_s*(U_R->p_s/U_R->rho_s/(gama_s-1.0)+0.5*U_R->u_s*U_R->u_s+0.5*U_R->v_s*U_R->v_s);	
+}
+
+static void primitive_comp(double * U, struct U_var * U_L, struct U_var * U_R, double z_sL, double z_sR, double z_sL_out, double z_sR_out, double area_L, double area_R)
+{   
+    double z_gL=1-z_sL;
+    double z_gR=1-z_sR;
+    const double gama_g = config[106], gama_s = config[6];
+    double eps = config[4];
+    double z_s = area_L*z_sL+area_R*z_sR;
+    double z_g = 1.0-z_s;
+    double U1=U[0], U2=U[1], U3=U[3], U4=U[4], U5=U[5], U6=U[7];
+    double rho_gR = U1/z_g;
+    double p_gR  = (U3/z_g - 0.5*rho_gR*pow(u_gR,2))*(gama_g-1.0);
+    double rho_s  = U4/z_s;
+    double u_s   = U5/U4;
+    U_L->v_g = U[2]/U1;
+    U_R->v_g = U_L->v_g;	
+    U_L->v_s = U[6]/U4;
+    U_R->v_s = U_L->v_s;
+    U_L->z_s = z_sL;
+    U_R->z_s = z_sR;
+    double fun[2], dfun[2][2], x_star[2];
+    int it_max = 5000, k = 0;
+    double err2 = 1e50;
+    while (k<it_max && err2>eps && fabs(z_sL-z_sR)>eps) {			
+	fun[0] =  0.5e0 * pow(U2 - (U1 + U4) * u_s, 0.2e1) * area_L * area_L * pow(-area_R * phi_gR * lo_gR + U1, -0.2e1) + (double) gama_g * ((U3 + (-0.1e1) * 0.5e0 * area_R * phi_gR * lo_gR * pow((U2 - (U1 + U4) * u_s) / phi_gR / lo_gR + u_s, 0.2e1) + (-0.1e1) * 0.5e0 * (-area_R * phi_gR * lo_gR + U1) * pow((U2 - (U1 + U4) * u_s) * area_L / (-area_R * phi_gR * lo_gR + U1) + u_s, 0.2e1)) * (double) (gama_g - 1) - area_R * phi_gR * p_gR) / (double) (gama_g - 1) / (-area_R * phi_gR * lo_gR + U1) + (-0.1e1) * 0.5e0 * pow(U2 - (U1 + U4) * u_s, 0.2e1) * pow(phi_gR, -0.2e1) * pow(lo_gR, -0.2e1) - (double) gama_g * p_gR / (double) (gama_g - 1) / lo_gR;
+	fun[1] = ((U3 + (-0.1e1) * 0.5e0 * area_R * phi_gR * lo_gR * pow((U2 - (U1 + U4) * u_s) / phi_gR / lo_gR + u_s, 0.2e1) + (-0.1e1) * 0.5e0 * (-area_R * phi_gR * lo_gR + U1) * pow((U2 - (U1 + U4) * u_s) * area_L / (-area_R * phi_gR * lo_gR + U1) + u_s, 0.2e1)) * (double) (gama_g - 1) - area_R * phi_gR * p_gR) / area_L / phi_gL / pow((-area_R * phi_gR * lo_gR + U1) / area_L / phi_gL, (double) gama_g) - p_gR / pow(lo_gR, (double) gama_g);
+	dfun[0][0] = ((-0.1e1) * 0.5e0 * area_R * phi_gR * pow((U2 - (U1 + U4) * u_s) / phi_gR / lo_gR + u_s, 0.2e1) + 0.10e1 * area_R * ((U2 - (U1 + U4) * u_s) / phi_gR / lo_gR + u_s) * (U2 - (U1 + U4) * u_s) / lo_gR + 0.5e0 * area_R * phi_gR * pow((U2 - (U1 + U4) * u_s) * area_L / (-area_R * phi_gR * lo_gR + U1) + u_s, 0.2e1) + (-0.1e1) * 0.10e1 * ((U2 - (U1 + U4) * u_s) * area_L / (-area_R * phi_gR * lo_gR + U1) + u_s) * (U2 - (U1 + U4) * u_s) * area_L * area_R * phi_gR / (-area_R * phi_gR * lo_gR + U1)) * (double) (gama_g - 1) / area_L / phi_gL / pow((-area_R * phi_gR * lo_gR + U1) / area_L / phi_gL, (double) gama_g) + ((U3 + (-0.1e1) * 0.5e0 * area_R * phi_gR * lo_gR * pow((U2 - (U1 + U4) * u_s) / phi_gR / lo_gR + u_s, 0.2e1) + (-0.1e1) * 0.5e0 * (-area_R * phi_gR * lo_gR + U1) * pow((U2 - (U1 + U4) * u_s) * area_L / (-area_R * phi_gR * lo_gR + U1) + u_s, 0.2e1)) * (double) (gama_g - 1) - area_R * phi_gR * p_gR) * (double) gama_g * area_R * phi_gR / area_L / phi_gL / pow((-area_R * phi_gR * lo_gR + U1) / area_L / phi_gL, (double) gama_g) / (-area_R * phi_gR * lo_gR + U1) + p_gR * (double) gama_g / pow(lo_gR, (double) gama_g) / lo_gR;
+	dfun[1][0] = -area_R * phi_gR / area_L / phi_gL / pow((-area_R * phi_gR * lo_gR + U1) / area_L / phi_gL, gama_g) - 0.1e1 / pow(lo_gR, gama_g);
+	dfun[0][1] = 0.10e1 * pow(U2 - (U1 + U4) * u_s, 0.2e1) * area_L * area_L * area_R * phi_gR * pow(-area_R * phi_gR * lo_gR + U1, -0.3e1) + gama_g * ((-0.1e1) * 0.5e0 * area_R * phi_gR * pow((U2 - (U1 + U4) * u_s) / phi_gR / lo_gR + u_s, 0.2e1) + 0.10e1 * area_R * ((U2 - (U1 + U4) * u_s) / phi_gR / lo_gR + u_s) * (U2 - (U1 + U4) * u_s) / lo_gR + 0.5e0 * area_R * phi_gR * pow((U2 - (U1 + U4) * u_s) * area_L / (-area_R * phi_gR * lo_gR + U1) + u_s, 0.2e1) + (-0.1e1) * 0.10e1 * ((U2 - (U1 + U4) * u_s) * area_L / (-area_R * phi_gR * lo_gR + U1) + u_s) * (U2 - (U1 + U4) * u_s) * area_L * area_R * phi_gR / (-area_R * phi_gR * lo_gR + U1)) / (-area_R * phi_gR * lo_gR + U1) + gama_g * ((U3 + (-0.1e1) * 0.5e0 * area_R * phi_gR * lo_gR * pow((U2 - (U1 + U4) * u_s) / phi_gR / lo_gR + u_s, 0.2e1) + (-0.1e1) * 0.5e0 * (-area_R * phi_gR * lo_gR + U1) * pow((U2 - (U1 + U4) * u_s) * area_L / (-area_R * phi_gR * lo_gR + U1) + u_s, 0.2e1)) * (gama_g - 0.1e1) - area_R * phi_gR * p_gR) * area_R * phi_gR / (gama_g - 0.1e1) * pow(-area_R * phi_gR * lo_gR + U1, -0.2e1) + 0.10e1 * pow(U2 - (U1 + U4) * u_s, 0.2e1) * pow(phi_gR, -0.2e1) * pow(lo_gR, -0.3e1) + p_gR * gama_g / (gama_g - 0.1e1) * pow(lo_gR, -0.2e1);
+	dfun[1][1] = -gama_g * area_R * phi_gR / (gama_g - 1) / (-area_R * phi_gR * lo_gR + U1) - gama_g / (gama_g - 1) / lo_gR;
+	x_star[0] = rho_gR;
+	x_star[1] = p_gR;
+	NewtonRapshon_matrix(x_star, &err2, fun, dfun[0], eps);
+	rho_gR=fmax(x_star[0],eps);
+	rho_gR=fmin(rho_gR,U1/area_R/z_gR-eps);
+	p_gR =fmax(x_star[1],eps);
+	k=k+1;
+    }
+    if (k>=it_max)
+        printf("\nRIeq_err:%lf! %lf, %lf, %lf, %lf, %lf, %lf\n",err2,z_sL,z_sR,rho_gR,p_gR,u_gR,p_sR);
+
+    U_R->rho_g = rho_gR;
+    U_L->rho_g = (U1-area_R*z_gR*rho_gR)/area_L/z_gL;
+    U_R->u_g = (U2-(U1+U4)*u_s)/(z_gR*rho_gR)+u_s;
+    U_L->u_g = (U2-(U1+U4)*u_s)/(U1-area_R*z_gR*rho_gR)*area_L+u_s;
+    
+    U_L->p_s = ((U6-0.5*z_s*rho_s*pow(u_s,2.0))*(gama_s-1)-area_R*z_sR*p_sR)/area_L/z_sL;
+    U_L->p_g = p_gR/pow(rho_gR,gama_g)*pow((U1-area_R*z_gR*rho_gR)/area_L/z_gL,gama_g);
+    U_R->p_s = p_sR;
+    U_R->p_g = p_gR;	
+    U_L->rho_s= rho_s;
+    U_R->rho_s= rho_s;
+    U_L->u_s = u_s;
+    U_R->u_s = u_s;
+    
+    struct RI_var RI_L, RI_R;
+    U2RI_cal(U_L, &RI_L);
+    RI2U_cal(U_L, &RI_L, z_sL_out, U_L->rho_g);
+    U2RI_cal(U_R, &RI_R);
+    RI2U_cal(U_R, &RI_R, z_sR_out, U_R->rho_g);
+    
+    U_L->U_rho_g = (1.0-z_sL_out)*U_L->rho_g;
+    U_L->U_u_g  = U_L->U_rho_g*U_L->u_g;
+    U_L->U_v_g  = U_L->U_rho_g*U_L->v_g;
+    U_L->U_e_g  = U_L->U_rho_g*(U_L->p_g/U_L->rho_g/(gama_g-1.0)+0.5*U_L->u_g*U_L->u_g+0.5*U_L->v_g*U_L->v_g);
+    U_L->U_rho_s = z_sL_out*U_L->rho_s;
+    U_L->U_u_s  = U_L->U_rho_s*U_L->u_s;
+    U_L->U_v_s  = U_L->U_rho_s*U_L->v_s;
+    U_L->U_e_s  = U_L->U_rho_s*(U_L->p_s/U_L->rho_s/(gama_s-1.0)+0.5*U_L->u_s*U_L->u_s+0.5*U_L->v_s*U_L->v_s);
+    U_R->U_rho_g = (1.0-z_sR_out)*U_R->rho_g;
+    U_R->U_u_g  = U_R->U_rho_g*U_R->u_g;
+    U_R->U_v_g  = U_R->U_rho_g*U_R->v_g;
+    U_R->U_e_g  = U_R->U_rho_g*(U_R->p_g/U_R->rho_g/(gama_g-1.0)+0.5*U_R->u_g*U_R->u_g+0.5*U_R->v_g*U_R->v_g);
+    U_R->U_rho_s = z_sR_out*U_R->rho_s;
+    U_R->U_u_s  = U_R->U_rho_s*U_R->u_s;
+    U_R->U_v_s  = U_R->U_rho_s*U_R->v_s;
+    U_R->U_e_s  = U_R->U_rho_s*(U_R->p_s/U_R->rho_s/(gama_s-1.0)+0.5*U_R->u_s*U_R->u_s+0.5*U_R->v_s*U_R->v_s);	
 }
