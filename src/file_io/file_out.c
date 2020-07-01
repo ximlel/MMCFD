@@ -49,7 +49,7 @@ void file_write_TEC(const struct flu_var FV, const struct mesh_var mv, const cha
 	char file_data[FILENAME_MAX];	
 	example_io(problem, file_data, 0);	
 
-	char tmp[30];
+	char tmp[50];
 	sprintf(tmp, "/FLU_VAR_%.15g.tec", time);
 	strcat(file_data, tmp);
 

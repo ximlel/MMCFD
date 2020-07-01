@@ -63,7 +63,7 @@ void example_io(const char *example, char *add_mkdir, const int i_or_o)
 	const int el = (int)config[8];
 	const int order = (int)config[9];
 
-	char tmp[15];
+	char tmp[50];
 	
 	if (i_or_o == 0)
 		{
