@@ -146,6 +146,7 @@ void finite_volume_scheme_GRP2D(struct flu_var * FV, const struct mesh_var * mv,
     struct_data_init(FX.ZRHO_F_gx,flux_var);
 
     FV_2_C_init(C, *FV);
+//    FV_2_C_init_new(C, *FV);
 
     int iL,iR,jL,jR, i_1,j_1, ip1,jp1, ij0;
     double z_gmid, rho_gmid, p_gmid, u_gmid, v_gmid;
@@ -168,7 +169,7 @@ void finite_volume_scheme_GRP2D(struct flu_var * FV, const struct mesh_var * mv,
 	start_clock = clock();
 	if (stop_step == 0) {
 	    boundary_cond_x(C,BND_X,l);
-	    boundary_cond_y(C,BND_Y,l);
+	    boundary_cond_y(C,BND_Y,0);
 	    for(i = 0; i < n_y; ++i)
 		for(j = 0; j < n_x; ++j) {
 		    i_1 = i>0?i-1:0;
@@ -187,7 +188,7 @@ void finite_volume_scheme_GRP2D(struct flu_var * FV, const struct mesh_var * mv,
 		}
 	}
 	else if (stop_step == 2) {
-	    boundary_cond_y(C,BND_Y,l);
+	    boundary_cond_y(C,BND_Y,0);
 	    boundary_cond_x(C,BND_X,l);
 	    for(j = 0; j < n_x; ++j)
 		for(i = 0; i < n_y; ++i) {
@@ -208,7 +209,7 @@ void finite_volume_scheme_GRP2D(struct flu_var * FV, const struct mesh_var * mv,
 	}
     slope_simiter3_GRP(F, C, SV);
     boundary_cond_slope_x(SV,BND_X,l);
-    boundary_cond_slope_y(SV,BND_Y,l);	
+    boundary_cond_slope_y(SV,BND_Y,0);	
 	char plot_dir[FILENAME_MAX];
 	if (t_all >= plot_t) {
 	    for(i = 1; i < n_y-1; ++i)
@@ -220,6 +221,10 @@ void finite_volume_scheme_GRP2D(struct flu_var * FV, const struct mesh_var * mv,
 		    FV->V[ij0]   = C.V_sC[i][j];
 		    FV->P[ij0]   = C.P_sC[i][j];
 		    FV->PHI[ij0] = C.Z_sC[i][j];
+// 		    FV->RHO[ij0] = FV->RHO_b[ij0];
+// 		    FV->U[ij0]   = FV->U_b[ij0];
+// 		    FV->V[ij0]   = FV->V_b[ij0];
+// 		    FV->P[ij0]   = FV->P_b[ij0];
 //             if (i >= n_y/2)
 //             {
 //                 FV->RHO[ij0] = C.RHO_sC[n_y-1-i][j]*C.Z_sC[n_y-1-i][j]+C.RHO_gC[n_y-1-i][j]*(1.0-C.Z_sC[n_y-1-i][j]);

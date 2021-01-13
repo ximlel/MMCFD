@@ -42,6 +42,7 @@ void finite_volume_scheme(struct flu_var * FV, const struct mesh_var * mv, const
 void finite_volume_scheme_GRP2D(struct flu_var * FV, const struct mesh_var * mv, const char * phase, const char * problem);
 
 void FV_2_C_init(struct center_var C, struct flu_var FV);
+void FV_2_C_init_new(struct center_var C, struct flu_var FV);
 void NewtonRapshon(double * x_star, double * err, double fun, double dfun, double eps);
 void NewtonRapshon_matrix(double * x_star, double * err, double * fun, double * dfun, double eps);
 void RI2U_cal(struct U_var * U, const struct RI_var * RI, double z_s, const double rho_g_start);

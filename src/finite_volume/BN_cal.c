@@ -325,6 +325,7 @@ void primitive_comp(double * U, struct U_var * U_L, struct U_var * U_R, double z
 	if(k==it_max1*3)
 	    {rho_gR = (U2-(U1+U4)*u_s)/z_gR/(U2/U1-u_s);
 	    p_gR  = (U3/z_g - 0.5*rho_gR*pow(U2/U1,2))*(gama_g-1.0);}
+//         printf("\nfun:%lf, %lf\n",p_gR,p_gR);    
     }
 /*
     if (k>=it_max)

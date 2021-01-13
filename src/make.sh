@@ -59,10 +59,11 @@ read
 #  ./hydrocode.out RP2D_BN2 RP2D_BN2/RP2D_BN2_s 2 2_s free
 #  ./hydrocode.out RP2D_BN3 RP2D_BN3/RP2D_BN3_s 2 1_s free
 #  ./hydrocode.out RP2D_BN3 RP2D_BN3/RP2D_BN3_g 2 1_g free
-  ./hydrocode.out RP2D_BN4 RP2D_BN4/RP2D_BN4_s 2 1_s free
+#  ./hydrocode.out RP2D_BN4 RP2D_BN4/RP2D_BN4_s 2 1_s free
 #  ./hydrocode.out RP2D_BN4 RP2D_BN4/RP2D_BN4_s 2 2_s free
 #  ./hydrocode.out RP2D_BN4 RP2D_BN4/RP2D_BN4_g 2 2_g free
-
+#  ./hydrocode.out RP2D_BN4 RP2D_BN4/RP2D_BN4_g 2 2_g free
+#  ./hydrocode.out Three_Cylinders Three_Cylinders/Three_Cylinders_g 2 2_s free
 
 # ./hydrocode.out Solid_Colume Solid_Colume/Solid_Colume 2 1_s free
 # ./hydrocode.out Solid_Colume Solid_Colume/Solid_Colume 2 2_s free
@@ -78,7 +79,9 @@ read
 # ./hydrocode.out Gas_Colume2_small Gas_Colume2_small/Gas_Colume 2 2_g free
 
 # ./hydrocode.out Solid_Colume_small Solid_Colume_small/Solid_Colume 2 2_s free
-# ./hydrocode.out Gas_Colume_small Gas_Colume_small/Gas_Colume 2 2_g free
+ ./hydrocode.out Gas_Colume_small Gas_Colume_small/Gas_Colume 2 2_g free
+
+#   ./hydrocode.out Shock_bubble_He Shock_bubble_He/Shock_bubble_He_s 2 2_s free
  
 #./hydrocode.out RMI/RMI_81	RMI/RMI_81	2 1_Riemann_exact RMI
 #./hydrocode.out RMI/RMI_81	RMI/RMI_81	2 2_GRP		  RMI

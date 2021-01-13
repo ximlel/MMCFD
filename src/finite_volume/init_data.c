@@ -52,3 +52,46 @@ void FV_2_C_init(struct center_var C, struct flu_var FV)
 	    C.E_sC[i][j]     = 0.25*(U_E_s[i_1][j_1]  +U_E_s[i_1][j]  +U_E_s[i][j_1]  +U_E_s[i][j]);
 	}
 }
+
+
+void FV_2_C_init_new(struct center_var C, struct flu_var FV)
+{
+    const int n_y = (int)config[14]+2, n_x = (int)config[13]+2;
+    const int n_x0= (int)config[13];
+    const double gamma_s=config[6], gamma_g=config[106];
+    int i,j,i_1,j_1, ij0;
+    double Z_g, Z_s;
+    double U_RHO_g[n_y][n_x], U_U_g[n_y][n_x], U_V_g[n_y][n_x], U_E_g[n_y][n_x];
+    double U_RHO_s[n_y][n_x], U_U_s[n_y][n_x], U_V_s[n_y][n_x], U_E_s[n_y][n_x];
+    for(i = 1; i < n_y-1; ++i)
+	for(j = 1; j < n_x-1; ++j) {
+	    ij0 = (i-1)*n_x0+j-1;
+	    C.Z_sC[i][j]  = FV.Z_a[ij0];
+	    C.RHO_sC[i][j]= FV.RHO[ij0];
+	    C.U_sC[i][j]  = FV.U[ij0];
+	    C.V_sC[i][j]  = FV.V[ij0];
+	    C.P_sC[i][j]  = FV.P[ij0];
+	    C.RHO_gC[i][j]= FV.RHO_b[ij0];
+	    C.U_gC[i][j]  = FV.U_b[ij0];
+	    C.V_gC[i][j]  = FV.V_b[ij0];
+	    C.P_gC[i][j]  = FV.P_b[ij0];
+	}
+    for(i = 1; i < n_y-1; ++i)
+	for(j = 1; j < n_x-1; ++j) {
+	    i_1=i-1>=1?i-1:1;
+	    j_1=j-1>=1?j-1:1;
+        Z_s = 0.25*(C.Z_sC[i][j]+C.Z_sC[i_1][j]+C.Z_sC[i][j_1]+C.Z_sC[i_1][j_1]);
+	    Z_g = 1.0-Z_s;
+	    C.ZRHO_sC[i][j] = C.RHO_sC[i][j]*Z_s;
+	    C.RHO_U_sC[i][j]= C.ZRHO_sC[i][j]*C.U_sC[i][j];
+	    C.RHO_V_sC[i][j]= C.ZRHO_sC[i][j]*C.V_sC[i][j];
+	    C.E_sC[i][j]    = C.P_sC[i][j]/C.RHO_sC[i][j]/(gamma_s-1.0)+0.5*(pow(C.U_sC[i][j],2)+pow(C.V_sC[i][j],2));
+	    C.E_sC[i][j]   *= C.ZRHO_sC[i][j];
+        
+	    C.ZRHO_gC[i][j] = C.RHO_gC[i][j]*Z_g;
+	    C.RHO_U_gC[i][j]= C.ZRHO_gC[i][j]*C.U_gC[i][j];
+	    C.RHO_V_gC[i][j]= C.ZRHO_gC[i][j]*C.V_gC[i][j];
+	    C.E_gC[i][j]    = C.P_gC[i][j]/C.RHO_gC[i][j]/(gamma_g-1.0)+0.5*(pow(C.U_gC[i][j],2)+pow(C.V_gC[i][j],2));
+	    C.E_gC[i][j]   *= C.ZRHO_gC[i][j];
+	}
+}
